@@ -11,8 +11,8 @@ const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
-  '/pwa-192x192.png',
-  '/pwa-512x512.png',
+  'src/icons/icon-192x192.png',
+  'src/icons/icon-512x512.png',
   '/apple-touch-icon.png',
   '/favicon.ico',
   '/assets/index.css',
@@ -306,7 +306,7 @@ function getFallbackResponse(request) {
   
   // Para imágenes, retornar imagen por defecto
   if (request.destination === 'image') {
-    return caches.match('/pwa-192x192.png')
+    return caches.match('src/icons/icon-192x192.png')
       .then(response => response || new Response('', { status: 404 }));
   }
   
@@ -315,7 +315,7 @@ function getFallbackResponse(request) {
 }
 
 // ============================================================
-// 4️⃣ MENSAJE - Comunicación con la aplicación
+// MENSAJE: Comunicación con la aplicación
 // ============================================================
 self.addEventListener('message', (event) => {
   console.log('📨 [SW] Mensaje recibido:', event.data);
@@ -354,7 +354,7 @@ self.addEventListener('message', (event) => {
 });
 
 // ============================================================
-// 📊 LOGGING Y DEBUGGING
+  // LOGGING: Logging y Debugging
 // ============================================================
 console.log(`
 🏥 Service Worker Iniciado
