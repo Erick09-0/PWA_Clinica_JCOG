@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { ThemeProvider } from './contexts/ThemeContext';
+import { ToastProvider, useToast } from './contexts/ToastContext';
+import { ToastContainer } from './components/ui/Toast';
 import { SplashScreen } from './components/SplashScreen';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
@@ -18,6 +20,7 @@ import { ConfiguracionSection } from './components/sections/ConfiguracionSection
 import { AyudaSection } from './components/sections/AyudaSection';
 
 function AppContent() {
+  const { info } = useToast();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [showSplash, setShowSplash] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -70,7 +73,7 @@ function AppContent() {
       case 'ayuda':
         return <AyudaSection />;
       case 'logout':
-        alert('Cerrando sesión...');
+        info('Cerrando sesión...');
         return null;
       default:
         return null;
@@ -116,6 +119,7 @@ function AppContent() {
               </AnimatePresence>
             </main>
           </div>
+          <ToastContainer />
         </motion.div>
       )}
     </>
@@ -125,7 +129,9 @@ function AppContent() {
 export default function App() {
   return (
     <ThemeProvider>
-      <AppContent />
+      <ToastProvider>
+        <AppContent />
+      </ToastProvider>
     </ThemeProvider>
   );
 }
