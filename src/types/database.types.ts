@@ -44,6 +44,30 @@ export interface Category {
   created_at?: string;
 }
 
+export interface AlertSettingsRow {
+  id: number;
+  stock_critical_threshold: number;
+  stock_warning_multiplier: number;
+  expiry_warning_days: number;
+  auto_order_enabled: boolean;
+  notify_email: boolean;
+  notify_push: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface AlertSettings {
+  id: number;
+  stockCriticalThreshold: number;
+  stockWarningMultiplier: number;
+  expiryWarningDays: number;
+  autoOrderEnabled: boolean;
+  notifyEmail: boolean;
+  notifyPush: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 // Tipos para las inserciones (sin campos autogenerados)
 export type ProductInsert = Omit<Product, 'id' | 'created_at' | 'updated_at' | 'status'>;
 export type AlertInsert = Omit<Alert, 'id' | 'created_at'>;
@@ -53,3 +77,4 @@ export type CategoryInsert = Omit<Category, 'id' | 'created_at'>;
 // Tipos para actualizaciones
 export type ProductUpdate = Partial<ProductInsert>;
 export type AlertUpdate = Partial<Omit<Alert, 'id' | 'created_at'>>;
+export type AlertSettingsUpdate = Partial<Omit<AlertSettings, 'id'>>;

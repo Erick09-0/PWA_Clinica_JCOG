@@ -1,14 +1,21 @@
-import { Search, Bell, Sun, Moon, Menu } from 'lucide-react';
+import { Search, Bell, Sun, Moon, Menu, AlertTriangle, Clock, BellRing } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useAlerts } from '../hooks/useAlerts';
+import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
+import { Button } from './ui/button';
 
 interface HeaderProps {
   onMenuClick?: () => void;
+  onOpenAlerts?: () => void;
 }
 
-export function Header({ onMenuClick }: HeaderProps) {
+export function Header({ onMenuClick, onOpenAlerts }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
+  const { alerts, loading, markAlertAsRead, markAllAsRead } = useAlerts();
+  const unreadAlerts = alerts.filter((alert) => !alert.isRead);
+  const previewAlerts = unreadAlerts.slice(0, 4);
   const currentDate = new Date().toLocaleDateString('es-ES', { 
     weekday: 'long', 
     year: 'numeric', 
@@ -121,20 +128,130 @@ export function Header({ onMenuClick }: HeaderProps) {
             </AnimatePresence>
           </motion.button>
 
-          <motion.button 
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.95 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-            className="p-2 sm:p-3 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all relative"
-          >
-            <Bell size={20} className="text-gray-600 dark:text-gray-400" />
-            <motion.span
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              transition={{ delay: 0.5, type: 'spring', stiffness: 500, damping: 30 }}
-              className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2 w-2 h-2 bg-red-500 rounded-full"
-            />
-          </motion.button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <motion.button 
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
+                className="p-2 sm:p-3 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all relative"
+              >
+                <Bell size={20} className="text-gray-600 dark:text-gray-400" />
+                {unreadAlerts.length > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ delay: 0.2, type: 'spring', stiffness: 500, damping: 30 }}
+                    className="absolute top-1.5 sm:top-2 right-1.5 sm:right-2 px-1.5 py-0.5 bg-red-500 text-[10px] font-semibold text-white rounded-full"
+                  >
+                    {unreadAlerts.length}
+                  </motion.span>
+                )}
+              </motion.button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-80 p-0 border-0 bg-transparent shadow-none">
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.2 }}
+                className="bg-white/80 dark:bg-slate-900/90 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/30 dark:border-slate-800/50 overflow-hidden"
+              >
+                <div className="px-4 py-3 border-b border-gray-100/60 dark:border-slate-800/60 flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">Alertas</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                      {loading ? 'Sincronizando...' : `${unreadAlerts.length} pendientes`}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-blue-600 dark:text-blue-400"
+                    onClick={() => markAllAsRead()}
+                    disabled={!unreadAlerts.length}
+                  >
+                    Marcar leído
+                  </Button>
+                </div>
+
+                <div className="max-h-80 overflow-y-auto divide-y divide-gray-100/70 dark:divide-slate-800/70">
+                  {loading ? (
+                    <div className="p-5 text-center text-sm text-gray-500 dark:text-gray-400">
+                      Cargando alertas...
+                    </div>
+                  ) : previewAlerts.length > 0 ? (
+                    previewAlerts.map((alert) => {
+                      const Icon =
+                        alert.type === 'critical'
+                          ? AlertTriangle
+                          : alert.type === 'warning'
+                          ? Clock
+                          : BellRing;
+                      const gradient =
+                        alert.type === 'critical'
+                          ? 'from-red-500/90 to-rose-600/90'
+                          : alert.type === 'warning'
+                          ? 'from-amber-500/90 to-orange-500/90'
+                          : 'from-blue-500/90 to-blue-600/90';
+                      return (
+                        <button
+                          key={alert.id}
+                          className="w-full px-4 py-3 flex items-start gap-3 text-left hover:bg-gray-50/70 dark:hover:bg-slate-800/70 transition-colors"
+                          onClick={() => markAlertAsRead(alert.id)}
+                        >
+                          <span className={`w-10 h-10 rounded-xl bg-gradient-to-br ${gradient} flex items-center justify-center text-white`}>
+                            <Icon size={18} />
+                          </span>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
+                                {alert.title}
+                              </p>
+                              <span className="text-[11px] text-gray-400 dark:text-gray-500 whitespace-nowrap">
+                                {alert.time}
+                              </span>
+                            </div>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                              {alert.message}
+                            </p>
+                            <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mt-1 truncate">
+                              {alert.product}
+                            </p>
+                          </div>
+                        </button>
+                      );
+                    })
+                  ) : (
+                    <div className="p-5 text-center text-sm text-gray-500 dark:text-gray-400">
+                      No hay alertas pendientes
+                    </div>
+                  )}
+                </div>
+
+                <div className="px-4 py-3 bg-gray-50/60 dark:bg-slate-900/60 flex items-center justify-between gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    onClick={() => markAllAsRead()}
+                    disabled={!unreadAlerts.length}
+                  >
+                    Limpiar
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="text-xs bg-gradient-to-r from-blue-600 to-blue-700 text-white"
+                    onClick={() => {
+                      markAllAsRead();
+                      onOpenAlerts?.();
+                    }}
+                  >
+                    Ver Centro de Alertas
+                  </Button>
+                </div>
+              </motion.div>
+            </PopoverContent>
+          </Popover>
         </motion.div>
       </div>
     </motion.header>

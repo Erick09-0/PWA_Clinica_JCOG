@@ -18,6 +18,7 @@ import { AnalisisSection } from './components/sections/AnalisisSection';
 import { ReportesSection } from './components/sections/ReportesSection';
 import { ConfiguracionSection } from './components/sections/ConfiguracionSection';
 import { AyudaSection } from './components/sections/AyudaSection';
+import ConfigAlertas from './components/sections/ConfigAlertas';
 
 function AppContent() {
   const { info } = useToast();
@@ -63,7 +64,11 @@ function AppContent() {
       case 'inventario':
         return <InventarioSection />;
       case 'alertas':
-        return <AlertasSection />;
+        return (
+          <AlertasSection
+            onOpenConfigAlertas={() => setActiveSection('config-alertas')}
+          />
+        );
       case 'analisis':
         return <AnalisisSection />;
       case 'reportes':
@@ -72,6 +77,8 @@ function AppContent() {
         return <ConfiguracionSection />;
       case 'ayuda':
         return <AyudaSection />;
+      case 'config-alertas':
+        return <ConfigAlertas onBack={() => setActiveSection('alertas')} />;
       case 'logout':
         info('Cerrando sesión...');
         return null;
@@ -104,6 +111,7 @@ function AppContent() {
           <div className="flex-1 overflow-auto">
             <Header 
               onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              onOpenAlerts={() => setActiveSection('alertas')}
             />
             <main className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
               <AnimatePresence mode="wait">

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'motion/react';
-import { Search, Plus, Download, Edit, Trash2, Eye, Loader2 } from 'lucide-react';
+import { Search, Plus, Download, Edit, Trash2, Eye, Loader2, RefreshCcw } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { useInventory } from '../../hooks/useInventory';
@@ -26,7 +26,8 @@ export function InventarioSection() {
     stats,
     searchProducts, 
     filterByCategory,
-    fetchProducts
+    fetchProducts,
+    refreshStats
   } = useInventory();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -75,6 +76,13 @@ export function InventarioSection() {
     fetchProducts();
   };
 
+  const handleRefresh = async () => {
+    setSelectedCategory('all');
+    setSearchQuery('');
+    await fetchProducts();
+    await refreshStats();
+  };
+
   // Categorías disponibles
   const categories = ['all', 'Analgésicos', 'Antibióticos', 'Material Médico', 'Soluciones', 'Material de Curación', 'Antisépticos'];
 
@@ -96,15 +104,26 @@ export function InventarioSection() {
               Administra todos los productos y materiales médicos
             </p>
           </div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
-            <Button 
-              onClick={() => setCreateModalOpen(true)}
-              className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg text-sm sm:text-base"
+          <div className="w-full sm:w-auto flex flex-col sm:flex-row gap-3">
+            <Button
+              variant="outline"
+              className="gap-2 text-sm"
+              onClick={handleRefresh}
+              disabled={loading}
             >
-              <Plus size={18} className="sm:w-5 sm:h-5 mr-2" />
-              Agregar Producto
+              {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
+              Actualizar datos
             </Button>
-          </motion.div>
+            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
+              <Button 
+                onClick={() => setCreateModalOpen(true)}
+                className="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white shadow-lg text-sm sm:text-base"
+              >
+                <Plus size={18} className="sm:w-5 sm:h-5 mr-2" />
+                Agregar Producto
+              </Button>
+            </motion.div>
+          </div>
         </motion.div>
 
         {/* Stats Cards */}

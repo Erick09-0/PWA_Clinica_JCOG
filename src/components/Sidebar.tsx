@@ -22,7 +22,7 @@ export function Sidebar({ activeSection, onSectionChange, isMobileMenuOpen, setI
   const menuItems = [
     { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { id: 'inventario', icon: Package, label: 'Inventario' },
-    { id: 'alertas', icon: AlertCircle, label: 'Alertas', badge: 3 },
+    { id: 'alertas', icon: AlertCircle, label: 'Alertas'},
     { id: 'analisis', icon: TrendingUp, label: 'Análisis' },
     { id: 'reportes', icon: FileText, label: 'Reportes' },
     { id: 'configuracion', icon: Settings, label: 'Configuración' },
