@@ -189,11 +189,7 @@ export function InventarioSection() {
               ))}
             </div>
 
-            {/* Export Button */}
-            <Button variant="outline" className="whitespace-nowrap">
-              <Download size={18} className="mr-2" />
-              Exportar
-            </Button>
+            
           </div>
         </motion.div>
 

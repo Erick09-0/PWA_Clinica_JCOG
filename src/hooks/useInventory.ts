@@ -1,7 +1,9 @@
-// src/hooks/useInventory.ts
+﻿// src/hooks/useInventory.ts
 import { useState, useEffect, useCallback } from 'react';
 import * as inventoryService from '../services/inventoryService';
 import type { Product, ProductInsert, ProductUpdate, ProductStatus } from '../types/database.types';
+import { useToast } from '../contexts/ToastContext';
+import { enqueueOfflineProduct, getOfflineProducts, removeOfflineProduct } from '../utils/offlineQueue';
 
 interface UseInventoryReturn {
   products: Product[];
@@ -32,6 +34,25 @@ export const useInventory = (): UseInventoryReturn => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [stats, setStats] = useState<UseInventoryReturn['stats']>(null);
+  const { info: toastInfo, error: toastError } = useToast();
+
+  // ============================================================
+  // REFRESH STATS
+  // ============================================================
+  const refreshStats = useCallback(async () => {
+    try {
+      const statsData = await inventoryService.getInventoryStats();
+      setStats({
+        totalProducts: statsData.totalProducts,
+        totalValue: statsData.totalValue,
+        lowStock: statsData.lowStock,
+        critical: statsData.critical,
+        optimal: statsData.optimal,
+      });
+    } catch (err) {
+      console.error('Error refreshing stats:', err);
+    }
+  }, []);
 
   // ============================================================
   // 📦 FETCH PRODUCTS
@@ -121,24 +142,50 @@ export const useInventory = (): UseInventoryReturn => {
   // ➕ CREATE PRODUCT
   // ============================================================
   const createProduct = useCallback(async (product: ProductInsert): Promise<Product | null> => {
+    const saveOffline = () => {
+      enqueueOfflineProduct(product);
+      toastInfo?.('Sin conexión. El producto se sincronizará automáticamente.');
+      const offlineProduct = {
+        ...product,
+        id: Date.now(),
+        status:
+          product.stock <= product.min_stock
+            ? 'critical'
+            : product.stock <= product.min_stock * 1.5
+            ? 'low'
+            : 'good',
+      } as Product;
+      setProducts(prev => [offlineProduct, ...prev]);
+      return offlineProduct;
+    };
+
     try {
       setError(null);
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        return saveOffline();
+      }
+
       const newProduct = await inventoryService.createProduct(product);
-      
-      // Actualizar la lista local
-      setProducts(prev => [...prev, newProduct]);
-      
-      // Refrescar estadísticas
+      setProducts(prev => [newProduct, ...prev]);
       await refreshStats();
-      
       return newProduct;
     } catch (err) {
+      const isNetworkError =
+        typeof navigator !== 'undefined' &&
+        (!navigator.onLine ||
+          (err instanceof Error && /fetch|Failed to fetch|NetworkError/i.test(err.message)));
+
+      if (isNetworkError) {
+        return saveOffline();
+      }
+
       const errorMsg = err instanceof Error ? err.message : 'Error creando producto';
       setError(errorMsg);
+      toastError?.(errorMsg);
       console.error('Error creating product:', err);
       return null;
     }
-  }, []);
+  }, [refreshStats, toastInfo, toastError]);
 
   // ============================================================
   // ✏️ UPDATE PRODUCT
@@ -222,20 +269,28 @@ export const useInventory = (): UseInventoryReturn => {
   // ============================================================
   // 📊 REFRESH STATS
   // ============================================================
-  const refreshStats = useCallback(async () => {
-    try {
-      const statsData = await inventoryService.getInventoryStats();
-      setStats({
-        totalProducts: statsData.totalProducts,
-        totalValue: statsData.totalValue,
-        lowStock: statsData.lowStock,
-        critical: statsData.critical,
-        optimal: statsData.optimal,
-      });
-    } catch (err) {
-      console.error('Error refreshing stats:', err);
+  // SYNC OFFLINE PRODUCTS
+  // ============================================================
+  const syncOfflineProducts = useCallback(async () => {
+    const queued = getOfflineProducts();
+    if (!queued.length) return;
+    let synced = 0;
+    for (const record of queued) {
+      try {
+        await inventoryService.createProduct(record.payload);
+        removeOfflineProduct(record.id);
+        synced += 1;
+      } catch (err) {
+        console.error('Error sincronizando cola offline:', err);
+        break;
+      }
     }
-  }, []);
+    if (synced > 0) {
+      await fetchProducts();
+      await refreshStats();
+      toastInfo?.(`${synced} producto(s) sincronizados desde modo offline.`);
+    }
+  }, [fetchProducts, refreshStats, toastInfo]);
 
   // ============================================================
   // 🎯 INITIAL LOAD
@@ -244,6 +299,18 @@ export const useInventory = (): UseInventoryReturn => {
     fetchProducts();
     refreshStats();
   }, [fetchProducts, refreshStats]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (navigator.onLine) {
+      syncOfflineProducts();
+    }
+    const handleOnline = () => {
+      syncOfflineProducts();
+    };
+    window.addEventListener('online', handleOnline);
+    return () => window.removeEventListener('online', handleOnline);
+  }, [syncOfflineProducts]);
 
   return {
     products,
@@ -322,3 +389,4 @@ export const useCategories = () => {
 
   return { categories, loading };
 };
+

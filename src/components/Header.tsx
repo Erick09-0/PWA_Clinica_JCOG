@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import {
   Search,
   Bell,
@@ -7,6 +8,7 @@ import {
   AlertTriangle,
   Clock,
   BellRing,
+  LogOut,
 } from 'lucide-react';
 import { Avatar, AvatarFallback } from './ui/avatar';
 import { motion, AnimatePresence } from 'motion/react';
@@ -15,16 +17,30 @@ import { useAlerts } from '../hooks/useAlerts';
 import { useAuth } from '../contexts/AuthContext';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Button } from './ui/button';
+import { useToast } from '../contexts/ToastContext';
 
 interface HeaderProps {
   onMenuClick?: () => void;
   onOpenAlerts?: () => void;
+  onNavigateSection?: (section: string) => void;
 }
 
-export function Header({ onMenuClick, onOpenAlerts }: HeaderProps) {
+const sectionKeywords: Record<string, string[]> = {
+  dashboard: ['dashboard', 'inicio', 'home', 'principal'],
+  inventario: ['inventario', 'productos', 'stock'],
+  alertas: ['alertas', 'notificaciones'],
+  analisis: ['analisis', 'analytics', 'estadisticas'],
+  reportes: ['reportes', 'informes'],
+  configuracion: ['configuracion', 'config', 'ajustes', 'perfil'],
+  ayuda: ['ayuda', 'soporte'],
+};
+
+export function Header({ onMenuClick, onOpenAlerts, onNavigateSection }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
   const { alerts, loading, markAlertAsRead, markAllAsRead, refresh } = useAlerts();
   const { user, signOut } = useAuth();
+  const { info: toastInfo } = useToast();
+  const [searchQuery, setSearchQuery] = useState('');
   const unreadAlerts = alerts.filter((alert) => !alert.isRead);
   const previewAlerts = unreadAlerts.slice(0, 4);
   const currentDate = new Date().toLocaleDateString('es-ES', {
@@ -34,11 +50,53 @@ export function Header({ onMenuClick, onOpenAlerts }: HeaderProps) {
     day: 'numeric',
   });
 
+  const userName =
+    user?.user_metadata?.full_name ||
+    user?.user_metadata?.name ||
+    user?.email ||
+    'Usuario';
   const userInitials =
-    user?.user_metadata?.full_name?.slice(0, 2)?.toUpperCase() ||
-    user?.email?.slice(0, 2)?.toUpperCase() ||
-    'US';
-  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
+    userName
+      .split(' ')
+      .map((part) => part[0])
+      .join('')
+      .slice(0, 2)
+      .toUpperCase() || 'US';
+
+  const resolveSection = (term: string) => {
+    const normalized = term.trim().toLowerCase();
+    for (const [section, keywords] of Object.entries(sectionKeywords)) {
+      if (section === normalized || keywords.includes(normalized)) {
+        return section;
+      }
+    }
+    return null;
+  };
+
+  const handleSearch = () => {
+    if (!searchQuery.trim()) {
+      toastInfo?.('Escribe una sección para navegar.');
+      return;
+    }
+    const target = resolveSection(searchQuery);
+    if (!target) {
+      toastInfo?.('No encontré esa sección. Prueba con inventario, reportes, etc.');
+      return;
+    }
+    onNavigateSection?.(target);
+    setSearchQuery('');
+  };
+
+  const handleQuickSearch = () => {
+    const term = window.prompt('¿A qué sección deseas ir? (ej. inventario)');
+    if (!term) return;
+    const target = resolveSection(term);
+    if (!target) {
+      toastInfo?.('No encontré esa sección.');
+      return;
+    }
+    onNavigateSection?.(target);
+  };
 
   return (
     <motion.header
@@ -73,7 +131,7 @@ export function Header({ onMenuClick, onOpenAlerts }: HeaderProps) {
             </motion.div>
             <div className="hidden sm:block">
               <div className="font-semibold text-gray-900 dark:text-white transition-colors text-sm lg:text-base">
-                Hola, {displayName}
+                Hola, {userName}
               </div>
               <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 capitalize transition-colors hidden md:block">
                 {currentDate}
@@ -94,7 +152,15 @@ export function Header({ onMenuClick, onOpenAlerts }: HeaderProps) {
               whileFocus={{ scale: 1.02 }}
               transition={{ type: 'spring', stiffness: 400, damping: 17 }}
               type="text"
-              placeholder="Buscar medicamento..."
+              placeholder="Ir a sección (ej. inventario)"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') {
+                  event.preventDefault();
+                  handleSearch();
+                }
+              }}
               className="pl-10 lg:pl-11 pr-4 lg:pr-5 py-2.5 lg:py-3 bg-gray-50 dark:bg-slate-900/50 border-0 rounded-xl w-48 lg:w-64 xl:w-96 text-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             />
           </div>
@@ -104,6 +170,7 @@ export function Header({ onMenuClick, onOpenAlerts }: HeaderProps) {
             whileTap={{ scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 400, damping: 17 }}
             className="md:hidden p-2 sm:p-3 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all"
+            onClick={handleQuickSearch}
           >
             <Search size={20} className="text-gray-600 dark:text-gray-400" />
           </motion.button>
@@ -261,6 +328,7 @@ export function Header({ onMenuClick, onOpenAlerts }: HeaderProps) {
             </PopoverContent>
           </Popover>
 
+          
         </motion.div>
       </div>
     </motion.header>

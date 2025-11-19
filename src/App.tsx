@@ -53,7 +53,7 @@ function AppContent() {
       case 'dashboard':
         return (
           <div className="space-y-4 sm:space-y-6">
-            <Alert />
+            <Alert onNavigate={(section) => setActiveSection(section)} />
             <StatsCards />
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <CriticalProducts />
@@ -61,7 +61,7 @@ function AppContent() {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
               <GraphsAnalysis />
-              <RecentActivity />
+              <RecentActivity onViewHistory={() => setActiveSection('analisis')} />
             </div>
           </div>
         );
@@ -127,9 +127,10 @@ function AppContent() {
             setIsMobileMenuOpen={setIsMobileMenuOpen}
           />
           <div className="flex-1 overflow-auto">
-            <Header 
+            <Header
               onMenuClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               onOpenAlerts={() => setActiveSection('alertas')}
+              onNavigateSection={(section) => setActiveSection(section)}
             />
             <main className="p-4 sm:p-6 lg:p-8 space-y-4 sm:space-y-6">
               <AnimatePresence mode="wait">

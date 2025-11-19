@@ -57,7 +57,7 @@ yarn dev
 pnpm dev
 \`\`\`
 
-La aplicación estará disponible en `http://localhost:5173`
+La aplicación estará disponible en `http://localhost:3000`
 
 ### Build para Producción
 
