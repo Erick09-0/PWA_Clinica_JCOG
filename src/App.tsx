@@ -19,12 +19,16 @@ import { ReportesSection } from './components/sections/ReportesSection';
 import { ConfiguracionSection } from './components/sections/ConfiguracionSection';
 import { AyudaSection } from './components/sections/AyudaSection';
 import ConfigAlertas from './components/sections/ConfigAlertas';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { LoginScreen } from './components/LoginScreen';
+import { Loader2 } from 'lucide-react';
 
 function AppContent() {
   const { info } = useToast();
   const [activeSection, setActiveSection] = useState('dashboard');
   const [showSplash, setShowSplash] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { user, loading: authLoading, signOut } = useAuth();
 
   useEffect(() => {
     // Check if splash has been shown before in this session
@@ -80,12 +84,26 @@ function AppContent() {
       case 'config-alertas':
         return <ConfigAlertas onBack={() => setActiveSection('alertas')} />;
       case 'logout':
+        signOut();
         info('Cerrando sesión...');
         return null;
       default:
         return null;
     }
   };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
+        <Loader2 className="w-6 h-6 animate-spin mr-2" />
+        Verificando sesión...
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <LoginScreen />;
+  }
 
   return (
     <>
@@ -138,7 +156,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <AppContent />
+        <AuthProvider>
+          <AppContent />
+        </AuthProvider>
       </ToastProvider>
     </ThemeProvider>
   );

@@ -77,4 +77,39 @@ export type CategoryInsert = Omit<Category, 'id' | 'created_at'>;
 // Tipos para actualizaciones
 export type ProductUpdate = Partial<ProductInsert>;
 export type AlertUpdate = Partial<Omit<Alert, 'id' | 'created_at'>>;
+export interface UserSettingsRow {
+  user_id: string;
+  full_name?: string;
+  phone?: string;
+  role?: string;
+  currency?: string;
+  timezone?: string;
+  date_format?: string;
+  language?: string;
+  notify_stock_critical?: boolean;
+  notify_expiring?: boolean;
+  notify_pending_orders?: boolean;
+  notify_daily_reports?: boolean;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface UserSettings {
+  userId: string;
+  fullName: string;
+  phone: string;
+  role: string;
+  currency: string;
+  timezone: string;
+  dateFormat: string;
+  language: string;
+  notifyStockCritical: boolean;
+  notifyExpiring: boolean;
+  notifyPendingOrders: boolean;
+  notifyDailyReports: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export type AlertSettingsUpdate = Partial<Omit<AlertSettings, 'id'>>;
+export type UserSettingsUpdate = Partial<Omit<UserSettings, 'userId'>>;

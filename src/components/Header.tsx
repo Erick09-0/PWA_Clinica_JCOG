@@ -1,8 +1,18 @@
-import { Search, Bell, Sun, Moon, Menu, AlertTriangle, Clock, BellRing } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
+import {
+  Search,
+  Bell,
+  Sun,
+  Moon,
+  Menu,
+  AlertTriangle,
+  Clock,
+  BellRing,
+} from 'lucide-react';
+import { Avatar, AvatarFallback } from './ui/avatar';
 import { motion, AnimatePresence } from 'motion/react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAlerts } from '../hooks/useAlerts';
+import { useAuth } from '../contexts/AuthContext';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Button } from './ui/button';
 
@@ -13,27 +23,32 @@ interface HeaderProps {
 
 export function Header({ onMenuClick, onOpenAlerts }: HeaderProps) {
   const { theme, toggleTheme } = useTheme();
-  const { alerts, loading, markAlertAsRead, markAllAsRead } = useAlerts();
+  const { alerts, loading, markAlertAsRead, markAllAsRead, refresh } = useAlerts();
+  const { user, signOut } = useAuth();
   const unreadAlerts = alerts.filter((alert) => !alert.isRead);
   const previewAlerts = unreadAlerts.slice(0, 4);
-  const currentDate = new Date().toLocaleDateString('es-ES', { 
-    weekday: 'long', 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric' 
+  const currentDate = new Date().toLocaleDateString('es-ES', {
+    weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
   });
 
+  const userInitials =
+    user?.user_metadata?.full_name?.slice(0, 2)?.toUpperCase() ||
+    user?.email?.slice(0, 2)?.toUpperCase() ||
+    'US';
+  const displayName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
+
   return (
-    <motion.header 
+    <motion.header
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
       className="bg-white/80 dark:bg-slate-800/80 backdrop-blur-xl px-4 sm:px-6 lg:px-8 py-4 sm:py-5 border-b border-gray-200/50 dark:border-slate-700/50 transition-colors duration-300"
     >
       <div className="flex items-center justify-between gap-4">
-        {/* Mobile Menu Button + User Info */}
         <div className="flex items-center gap-3 sm:gap-4">
-          {/* Mobile Menu Button */}
           <motion.button
             onClick={onMenuClick}
             whileHover={{ scale: 1.1 }}
@@ -43,40 +58,39 @@ export function Header({ onMenuClick, onOpenAlerts }: HeaderProps) {
             <Menu size={24} className="text-gray-600 dark:text-gray-400" />
           </motion.button>
 
-          {/* User Info */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.1, duration: 0.5 }}
             className="flex items-center gap-3 sm:gap-4"
           >
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 17 }}
-            >
+            <motion.div whileHover={{ scale: 1.05 }} transition={{ type: 'spring', stiffness: 400, damping: 17 }}>
               <Avatar className="w-10 h-10 sm:w-12 sm:h-12 ring-2 ring-blue-100 dark:ring-blue-900">
-                <AvatarImage src="https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop" />
-                <AvatarFallback className="bg-blue-600 text-white font-semibold">DG</AvatarFallback>
+                <AvatarFallback className="bg-blue-600 text-white font-semibold">
+                  {userInitials}
+                </AvatarFallback>
               </Avatar>
             </motion.div>
             <div className="hidden sm:block">
-              <div className="font-semibold text-gray-900 dark:text-white transition-colors text-sm lg:text-base">Hola, Dr. García</div>
-              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 capitalize transition-colors hidden md:block">{currentDate}</div>
+              <div className="font-semibold text-gray-900 dark:text-white transition-colors text-sm lg:text-base">
+                Hola, {displayName}
+              </div>
+              <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 capitalize transition-colors hidden md:block">
+                {currentDate}
+              </div>
             </div>
           </motion.div>
         </div>
 
-        {/* Search and Icons */}
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, x: 20 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: 0.2, duration: 0.5 }}
           className="flex items-center gap-2 sm:gap-3"
         >
-          {/* Search - Hidden on small mobile */}
           <div className="relative hidden md:block">
             <Search className="absolute left-3 lg:left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-500" size={18} />
-            <motion.input 
+            <motion.input
               whileFocus={{ scale: 1.02 }}
               transition={{ type: 'spring', stiffness: 400, damping: 17 }}
               type="text"
@@ -85,8 +99,7 @@ export function Header({ onMenuClick, onOpenAlerts }: HeaderProps) {
             />
           </div>
 
-          {/* Search icon for mobile */}
-          <motion.button 
+          <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             transition={{ type: 'spring', stiffness: 400, damping: 17 }}
@@ -94,13 +107,11 @@ export function Header({ onMenuClick, onOpenAlerts }: HeaderProps) {
           >
             <Search size={20} className="text-gray-600 dark:text-gray-400" />
           </motion.button>
-          
-          {/* Theme Toggle */}
-          <motion.button 
+
+          <motion.button
             onClick={toggleTheme}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
-            transition={{ type: 'spring', stiffness: 400, damping: 17 }}
             className="p-2 sm:p-3 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all relative overflow-hidden"
           >
             <AnimatePresence mode="wait">
@@ -130,11 +141,11 @@ export function Header({ onMenuClick, onOpenAlerts }: HeaderProps) {
 
           <Popover>
             <PopoverTrigger asChild>
-              <motion.button 
+              <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                transition={{ type: 'spring', stiffness: 400, damping: 17 }}
                 className="p-2 sm:p-3 hover:bg-gray-100 dark:hover:bg-slate-700 rounded-xl transition-all relative"
+                onClick={() => refresh()}
               >
                 <Bell size={20} className="text-gray-600 dark:text-gray-400" />
                 {unreadAlerts.length > 0 && (
@@ -241,10 +252,7 @@ export function Header({ onMenuClick, onOpenAlerts }: HeaderProps) {
                   <Button
                     size="sm"
                     className="text-xs bg-gradient-to-r from-blue-600 to-blue-700 text-white"
-                    onClick={() => {
-                      markAllAsRead();
-                      onOpenAlerts?.();
-                    }}
+                    onClick={() => onOpenAlerts?.()}
                   >
                     Ver Centro de Alertas
                   </Button>
@@ -252,6 +260,7 @@ export function Header({ onMenuClick, onOpenAlerts }: HeaderProps) {
               </motion.div>
             </PopoverContent>
           </Popover>
+
         </motion.div>
       </div>
     </motion.header>
