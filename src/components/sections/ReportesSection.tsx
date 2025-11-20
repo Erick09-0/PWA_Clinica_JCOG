@@ -501,10 +501,10 @@ export function ReportesSection() {
         transition={{ duration: 0.5 }}
       >
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Centro de Reportes
+          {translate('Centro de Reportes', 'Reports Center')}
         </h1>
         <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-          Genera y descarga reportes personalizados del inventario
+          {translate('Genera y descarga reportes personalizados del inventario', 'Generate and download custom inventory reports')}
         </p>
       </motion.div>
 
