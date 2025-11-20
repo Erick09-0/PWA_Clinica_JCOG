@@ -12,6 +12,7 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { Button } from './ui/button';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface SidebarProps {
   activeSection: string;
@@ -27,23 +28,24 @@ export function Sidebar({
   setIsMobileMenuOpen,
 }: SidebarProps) {
   const { user, signOut } = useAuth();
+  const { t } = useLanguage();
 
   const userInitials =
     user?.user_metadata?.full_name?.slice(0, 2)?.toUpperCase() ||
     user?.email?.slice(0, 2)?.toUpperCase() ||
     'US';
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Usuario';
-  const userRole = user?.user_metadata?.role || 'Administrador';
+  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || t('sidebar.defaultUser');
+  const userRole = user?.user_metadata?.role || t('sidebar.defaultRole');
 
   const menuItems = [
-    { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-    { id: 'inventario', icon: Package, label: 'Inventario' },
-    { id: 'alertas', icon: AlertCircle, label: 'Alertas' },
-    { id: 'analisis', icon: TrendingUp, label: 'Análisis' },
-    { id: 'reportes', icon: FileText, label: 'Reportes' },
-    { id: 'configuracion', icon: Settings, label: 'Configuración' },
-    { id: 'ayuda', icon: HelpCircle, label: 'Ayuda' },
-    { id: 'logout', icon: LogOut, label: 'Cerrar sesión', danger: true },
+    { id: 'dashboard', icon: LayoutDashboard, label: t('sidebar.menu.dashboard') },
+    { id: 'inventario', icon: Package, label: t('sidebar.menu.inventario') },
+    { id: 'alertas', icon: AlertCircle, label: t('sidebar.menu.alertas') },
+    { id: 'analisis', icon: TrendingUp, label: t('sidebar.menu.analisis') },
+    { id: 'reportes', icon: FileText, label: t('sidebar.menu.reportes') },
+    { id: 'configuracion', icon: Settings, label: t('sidebar.menu.configuracion') },
+    { id: 'ayuda', icon: HelpCircle, label: t('sidebar.menu.ayuda') },
+    { id: 'logout', icon: LogOut, label: t('sidebar.menu.logout'), danger: true },
   ];
 
   const handleMenuClick = async (itemId: string) => {
@@ -74,13 +76,13 @@ export function Sidebar({
           </motion.div>
           <div>
             <div className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">
-              Clínica Juan Carlos
+              {t('sidebar.systemName')}
             </div>
             <div className="font-semibold text-gray-900 dark:text-white text-sm leading-tight">
-              Ojeda Gallardo
+              {t('sidebar.systemOwner')}
             </div>
             <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-              Sistema de Inventario
+              {t('sidebar.systemSubtitle')}
             </div>
           </div>
         </div>

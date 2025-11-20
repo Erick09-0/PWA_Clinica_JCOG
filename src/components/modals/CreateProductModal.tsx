@@ -1,10 +1,21 @@
 // src/components/modals/CreateProductModal.tsx
-import { useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { X, Package, Tag, MapPin, DollarSign, Calendar, TrendingDown, Plus, Loader2 } from 'lucide-react';
-import { useInventory } from '../../hooks/useInventory';
-import { useToast } from '../../contexts/ToastContext';
-import type { ProductInsert } from '../../types/database.types';
+import { useMemo, useState } from "react";
+import { motion, AnimatePresence } from "motion/react";
+import {
+  X,
+  Package,
+  Tag,
+  MapPin,
+  DollarSign,
+  Calendar,
+  TrendingDown,
+  Plus,
+  Loader2,
+} from "lucide-react";
+import { useInventory } from "../../hooks/useInventory";
+import { useToast } from "../../contexts/ToastContext";
+import type { ProductInsert } from "../../types/database.types";
+import { useLanguage } from "../../contexts/LanguageContext";
 
 interface CreateProductModalProps {
   isOpen: boolean;
@@ -12,88 +23,127 @@ interface CreateProductModalProps {
   onSuccess?: () => void;
 }
 
-const categories = [
-  'Analgésicos',
-  'Antibióticos',
-  'Material Médico',
-  'Soluciones',
-  'Material de Curación',
-  'Antisépticos',
-  'Otros'
-];
+const rawCategories = [
+  "Analgésicos",
+  "Antibióticos",
+  "Material Médico",
+  "Soluciones",
+  "Material de Curación",
+  "Antisépticos",
+  "Otros",
+] as const;
 
-export function CreateProductModal({ isOpen, onClose, onSuccess }: CreateProductModalProps) {
+const categoryLabelsEn: Record<(typeof rawCategories)[number], string> = {
+  Analgésicos: "Pain relievers",
+  Antibióticos: "Antibiotics",
+  "Material Médico": "Medical supplies",
+  Soluciones: "Solutions",
+  "Material de Curación": "Dressings",
+  Antisépticos: "Antiseptics",
+  Otros: "Other",
+};
+
+export function CreateProductModal({
+  isOpen,
+  onClose,
+  onSuccess,
+}: CreateProductModalProps) {
   const { createProduct } = useInventory();
   const { success, error } = useToast();
+  const { translate } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState<ProductInsert>({
-    name: '',
-    category: 'Analgésicos',
+    name: "",
+    category: "Analgésicos",
     stock: 0,
     min_stock: 10,
-    location: '',
+    location: "",
     price: 0,
-    expiry_date: '',
+    expiry_date: "",
   });
+
+  const categoryOptions = useMemo(
+    () =>
+      rawCategories.map((value) => ({
+        value,
+        label: translate(value, categoryLabelsEn[value]),
+      })),
+    [translate],
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validaciones
+
     if (!formData.name.trim()) {
-      error('El nombre del producto es requerido');
+      error(
+        translate(
+          "El nombre del producto es requerido",
+          "Product name is required",
+        ),
+      );
       return;
     }
-    
     if (formData.stock < 0) {
-      error('El stock no puede ser negativo');
+      error(
+        translate("El stock no puede ser negativo", "Stock cannot be negative"),
+      );
       return;
     }
-    
     if (formData.min_stock < 0) {
-      error('El stock mínimo no puede ser negativo');
+      error(
+        translate(
+          "El stock mínimo no puede ser negativo",
+          "Min stock cannot be negative",
+        ),
+      );
       return;
     }
-    
     if (formData.price < 0) {
-      error('El precio no puede ser negativo');
+      error(
+        translate(
+          "El precio no puede ser negativo",
+          "Price cannot be negative",
+        ),
+      );
       return;
     }
 
     setLoading(true);
-    
     try {
       const result = await createProduct(formData);
-      
       if (result) {
-        success('Producto creado exitosamente');
-        
-        // Limpiar formulario
+        success(
+          translate(
+            "Producto creado exitosamente",
+            "Product created successfully",
+          ),
+        );
         setFormData({
-          name: '',
-          category: 'Analgésicos',
+          name: "",
+          category: "Analgésicos",
           stock: 0,
           min_stock: 10,
-          location: '',
+          location: "",
           price: 0,
-          expiry_date: '',
+          expiry_date: "",
         });
-        
         onSuccess?.();
         onClose();
       }
     } catch (err) {
-      console.error('Error creating product:', err);
-      error('Error al crear el producto');
+      console.error("Error creating product:", err);
+      error(
+        translate("Error al crear el producto", "Failed to create product"),
+      );
     } finally {
       setLoading(false);
     }
   };
 
   const handleChange = (field: keyof ProductInsert, value: string | number) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [field]: value
+      [field]: value,
     }));
   };
 
@@ -101,7 +151,6 @@ export function CreateProductModal({ isOpen, onClose, onSuccess }: CreateProduct
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* Backdrop con blur */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -110,17 +159,15 @@ export function CreateProductModal({ isOpen, onClose, onSuccess }: CreateProduct
             className="fixed inset-0 bg-black/40 backdrop-blur-sm z-50"
           />
 
-          {/* Modal */}
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              transition={{ type: 'spring', duration: 0.5 }}
+              transition={{ type: "spring", duration: 0.5 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white/80 dark:bg-slate-800/80 backdrop-blur-2xl backdrop-saturate-150 rounded-3xl shadow-[0_8px_32px_rgba(31,41,55,0.12)] border border-white/40 dark:border-slate-700/30 pointer-events-auto"
+              className="w-full max-w-2xl max-h-[90vh] overflow-y-auto bg-white/80 dark:bg-slate-800/80 backdrop-blur-2xl rounded-3xl shadow border border-white/40 dark:border-slate-700/30 pointer-events-auto"
             >
-              {/* Header */}
               <div className="sticky top-0 z-10 bg-gradient-to-r from-blue-500 to-cyan-600 text-white p-6 rounded-t-3xl">
                 <div className="flex items-start justify-between">
                   <motion.div
@@ -133,212 +180,213 @@ export function CreateProductModal({ isOpen, onClose, onSuccess }: CreateProduct
                       <Plus className="w-6 h-6" />
                     </div>
                     <div>
-                      <h2 className="text-2xl font-bold">Agregar Producto</h2>
-                      <p className="text-sm opacity-80 mt-1">Completa la información del nuevo producto</p>
+                      <p className="text-xs opacity-80">
+                        {translate("Nuevo registro", "New entry")}
+                      </p>
+                      <h2 className="text-2xl font-bold">
+                        {translate("Agregar producto", "Add product")}
+                      </h2>
+                      <p className="text-sm opacity-80 mt-1">
+                        {translate(
+                          "Completa los detalles del producto para sumarlo al inventario.",
+                          "Fill out the product details to add it to the inventory.",
+                        )}
+                      </p>
                     </div>
                   </motion.div>
-                  
                   <motion.button
                     whileHover={{ scale: 1.1, rotate: 90 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={onClose}
-                    className="p-2 hover:bg-white/20 rounded-xl transition-colors"
+                    disabled={loading}
+                    className="p-2 hover:bg-white/20 rounded-xl transition-colors disabled:opacity-50"
                   >
                     <X className="w-6 h-6" />
                   </motion.button>
                 </div>
               </div>
 
-              {/* Form */}
-              <form onSubmit={handleSubmit} className="p-6 space-y-4">
-                {/* Nombre del Producto */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2 }}
-                  className="bg-gradient-to-br from-blue-50 to-cyan-50 dark:from-blue-900/20 dark:to-cyan-900/20 backdrop-blur-xl rounded-2xl p-4 border border-blue-100 dark:border-blue-800/30"
-                >
-                  <label className="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 mb-2">
-                    <Package className="w-4 h-4" />
-                    Nombre del Producto *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => handleChange('name', e.target.value)}
-                    placeholder="Ej: Paracetamol 500mg"
-                    className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-blue-200 dark:border-blue-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder:text-gray-400"
-                  />
-                </motion.div>
-
-                {/* Grid 2 columnas */}
+              <form onSubmit={handleSubmit} className="p-6 space-y-5">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {/* Categoría */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.25 }}
-                    className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 backdrop-blur-xl rounded-2xl p-4 border border-purple-100 dark:border-purple-800/30"
+                    transition={{ delay: 0.1 }}
+                    className="space-y-2"
                   >
-                    <label className="flex items-center gap-2 text-sm font-medium text-purple-600 dark:text-purple-400 mb-2">
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                      <Package className="w-4 h-4" />
+                      {translate("Nombre del producto", "Product name")} *
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.name}
+                      onChange={(e) => handleChange("name", e.target.value)}
+                      placeholder={translate(
+                        "Ej. Ibuprofeno 400mg",
+                        "e.g. Ibuprofen 400mg",
+                      )}
+                      className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder:text-gray-400"
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.15 }}
+                    className="space-y-2"
+                  >
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                       <Tag className="w-4 h-4" />
-                      Categoría *
+                      {translate("Categoría", "Category")}
                     </label>
                     <select
-                      required
                       value={formData.category}
-                      onChange={(e) => handleChange('category', e.target.value)}
-                      className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-purple-200 dark:border-purple-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 text-gray-900 dark:text-white"
+                      onChange={(e) => handleChange("category", e.target.value)}
+                      className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
                     >
-                      {categories.map(cat => (
-                        <option key={cat} value={cat}>{cat}</option>
+                      {categoryOptions.map((category) => (
+                        <option key={category.value} value={category.value}>
+                          {category.label}
+                        </option>
                       ))}
                     </select>
                   </motion.div>
 
-                  {/* Ubicación */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                    className="bg-gradient-to-br from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 backdrop-blur-xl rounded-2xl p-4 border border-indigo-100 dark:border-indigo-800/30"
+                    transition={{ delay: 0.2 }}
+                    className="space-y-2"
                   >
-                    <label className="flex items-center gap-2 text-sm font-medium text-indigo-600 dark:text-indigo-400 mb-2">
-                      <MapPin className="w-4 h-4" />
-                      Ubicación
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.location}
-                      onChange={(e) => handleChange('location', e.target.value)}
-                      placeholder="Ej: A-12"
-                      className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-indigo-200 dark:border-indigo-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 text-gray-900 dark:text-white placeholder:text-gray-400"
-                    />
-                  </motion.div>
-                </div>
-
-                {/* Grid 3 columnas */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Stock Actual */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.35 }}
-                    className="bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 backdrop-blur-xl rounded-2xl p-4 border border-green-100 dark:border-green-800/30"
-                  >
-                    <label className="flex items-center gap-2 text-sm font-medium text-green-600 dark:text-green-400 mb-2">
-                      <Package className="w-4 h-4" />
-                      Stock *
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 text-green-600 dark:text-green-400">
+                      <Plus className="w-4 h-4" />
+                      {translate("Stock", "Stock")} *
                     </label>
                     <input
                       type="number"
                       required
                       min="0"
                       value={formData.stock}
-                      onChange={(e) => handleChange('stock', parseInt(e.target.value) || 0)}
+                      onChange={(e) =>
+                        handleChange("stock", parseInt(e.target.value) || 0)
+                      }
                       placeholder="0"
-                      className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-green-200 dark:border-green-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white placeholder:text-gray-400"
+                      className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 border border-green-200 dark:border-green-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 text-gray-900 dark:text-white placeholder:text-gray-400"
                     />
                   </motion.div>
 
-                  {/* Stock Mínimo */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.4 }}
-                    className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 backdrop-blur-xl rounded-2xl p-4 border border-amber-100 dark:border-amber-800/30"
+                    transition={{ delay: 0.25 }}
+                    className="space-y-2"
                   >
-                    <label className="flex items-center gap-2 text-sm font-medium text-amber-600 dark:text-amber-400 mb-2">
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2 text-amber-600 dark:text-amber-400">
                       <TrendingDown className="w-4 h-4" />
-                      Stock Mín *
+                      {translate("Stock mínimo", "Minimum stock")} *
                     </label>
                     <input
                       type="number"
                       required
                       min="0"
                       value={formData.min_stock}
-                      onChange={(e) => handleChange('min_stock', parseInt(e.target.value) || 0)}
+                      onChange={(e) =>
+                        handleChange("min_stock", parseInt(e.target.value) || 0)
+                      }
                       placeholder="10"
-                      className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-amber-200 dark:border-amber-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-900 dark:text-white placeholder:text-gray-400"
+                      className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 border border-amber-200 dark:border-amber-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500 text-gray-900 dark:text-white placeholder:text-gray-400"
                     />
                   </motion.div>
 
-                  {/* Precio */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.45 }}
-                    className="bg-gradient-to-br from-yellow-50 to-orange-50 dark:from-yellow-900/20 dark:to-orange-900/20 backdrop-blur-xl rounded-2xl p-4 border border-yellow-100 dark:border-yellow-800/30"
+                    transition={{ delay: 0.3 }}
+                    className="space-y-2"
                   >
-                    <label className="flex items-center gap-2 text-sm font-medium text-yellow-600 dark:text-yellow-400 mb-2">
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                      <MapPin className="w-4 h-4" />
+                      {translate("Ubicación", "Location")}
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.location}
+                      onChange={(e) => handleChange("location", e.target.value)}
+                      placeholder={translate("Ej. Anaquel A4", "e.g. Shelf A4")}
+                      className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder:text-gray-400"
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.35 }}
+                    className="space-y-2"
+                  >
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
                       <DollarSign className="w-4 h-4" />
-                      Precio *
+                      {translate("Precio unitario", "Unit price")}
                     </label>
                     <input
                       type="number"
-                      required
                       min="0"
-                      step="0.01"
                       value={formData.price}
-                      onChange={(e) => handleChange('price', parseFloat(e.target.value) || 0)}
+                      onChange={(e) =>
+                        handleChange("price", parseFloat(e.target.value) || 0)
+                      }
                       placeholder="0.00"
-                      className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-yellow-200 dark:border-yellow-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-500 text-gray-900 dark:text-white placeholder:text-gray-400"
+                      className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white placeholder:text-gray-400"
+                    />
+                  </motion.div>
+
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="space-y-2"
+                  >
+                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                      <Calendar className="w-4 h-4" />
+                      {translate("Fecha de caducidad", "Expiry date")}
+                    </label>
+                    <input
+                      type="date"
+                      value={formData.expiry_date || ""}
+                      onChange={(e) =>
+                        handleChange("expiry_date", e.target.value)
+                      }
+                      className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white"
                     />
                   </motion.div>
                 </div>
 
-                {/* Fecha de Vencimiento */}
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5 }}
-                  className="bg-gradient-to-br from-rose-50 to-pink-50 dark:from-rose-900/20 dark:to-pink-900/20 backdrop-blur-xl rounded-2xl p-4 border border-rose-100 dark:border-rose-800/30"
+                  transition={{ delay: 0.45 }}
+                  className="flex flex-col sm:flex-row justify-end gap-3 pt-4"
                 >
-                  <label className="flex items-center gap-2 text-sm font-medium text-rose-600 dark:text-rose-400 mb-2">
-                    <Calendar className="w-4 h-4" />
-                    Fecha de Vencimiento
-                  </label>
-                  <input
-                    type="date"
-                    value={formData.expiry_date}
-                    onChange={(e) => handleChange('expiry_date', e.target.value)}
-                    className="w-full px-4 py-3 bg-white/60 dark:bg-slate-800/60 backdrop-blur-sm border border-rose-200 dark:border-rose-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-rose-500 text-gray-900 dark:text-white"
-                  />
-                </motion.div>
-
-                {/* Botones */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.55 }}
-                  className="flex gap-3 pt-4"
-                >
-                  <button
+                  <Button
                     type="button"
+                    variant="outline"
                     onClick={onClose}
                     disabled={loading}
-                    className="flex-1 py-3 bg-gray-200 dark:bg-slate-700 hover:bg-gray-300 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 font-medium rounded-xl transition-all disabled:opacity-50"
                   >
-                    Cancelar
-                  </button>
-                  <button
+                    {translate("Cancelar", "Cancel")}
+                  </Button>
+                  <Button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 py-3 bg-gradient-to-r from-blue-600 to-cyan-700 hover:from-blue-700 hover:to-cyan-800 text-white font-medium rounded-xl transition-all shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                    className="bg-gradient-to-r from-blue-600 to-blue-700 text-white gap-2"
                   >
                     {loading ? (
-                      <>
-                        <Loader2 className="w-5 h-5 animate-spin" />
-                        Creando...
-                      </>
+                      <Loader2 className="w-4 h-4 animate-spin" />
                     ) : (
-                      <>
-                        <Plus className="w-5 h-5" />
-                        Crear Producto
-                      </>
+                      <Plus className="w-4 h-4" />
                     )}
-                  </button>
+                    {translate("Guardar producto", "Save product")}
+                  </Button>
                 </motion.div>
               </form>
             </motion.div>

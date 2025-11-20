@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { TrendingUp, RefreshCw, Loader2 } from 'lucide-react';
+import { useMemo } from "react";
+import { TrendingUp, RefreshCw, Loader2 } from "lucide-react";
 import {
   BarChart,
   Bar,
@@ -9,12 +9,14 @@ import {
   Tooltip,
   ResponsiveContainer,
   Cell,
-} from 'recharts';
-import { motion } from 'motion/react';
-import { useAnalytics } from '../hooks/useAnalytics';
+} from "recharts";
+import { motion } from "motion/react";
+import { useAnalytics } from "../hooks/useAnalytics";
+import { useLanguage } from "../contexts/LanguageContext";
 
 export function GraphsAnalysis() {
   const { data, loading, error, refresh } = useAnalytics();
+  const { translate, formatNumber } = useLanguage();
   const chartData = data?.monthlyMovements ?? [];
 
   const summary = useMemo(() => {
@@ -36,19 +38,36 @@ export function GraphsAnalysis() {
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
           className="bg-gradient-to-r from-gray-900 to-blue-900 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-xl text-xs space-y-1 shadow-xl border border-blue-400"
         >
-          <div className="font-semibold text-blue-300">{payload[0].payload.month}</div>
-          <div className="font-medium">{payload[0].value} movimientos</div>
+          <div className="font-semibold text-blue-300">
+            {payload[0].payload.month}
+          </div>
+          <div className="font-medium">
+            {formatNumber(payload[0].value)}{" "}
+            {translate("movimientos", "movements")}
+          </div>
           <div className="text-blue-200 text-xs">
-            Stock: {payload[0].payload.stock} | Ingresos: {payload[0].payload.ingresos}
+            {translate("Stock", "Stock")}:{" "}
+            {formatNumber(payload[0].payload.stock)} |{" "}
+            {translate("Ingresos", "Inbound")}:{" "}
+            {formatNumber(payload[0].payload.ingresos)}
           </div>
         </motion.div>
       );
     }
     return null;
   };
+
+  const summaryCards = [
+    { label: translate("Promedio", "Average"), value: summary.avg },
+    { label: translate("Máximo", "Maximum"), value: summary.max },
+    {
+      label: translate("Tendencia", "Trend"),
+      value: `${summary.trend > 0 ? "+" : ""}${summary.trend}%`,
+    },
+  ];
 
   return (
     <motion.div
@@ -67,17 +86,29 @@ export function GraphsAnalysis() {
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 1.35, type: 'spring', stiffness: 200, damping: 15 }}
+            transition={{
+              delay: 1.35,
+              type: "spring",
+              stiffness: 200,
+              damping: 15,
+            }}
             className="p-2 sm:p-3 bg-gradient-to-br from-cyan-500 to-blue-600 rounded-xl sm:rounded-2xl shadow-lg flex-shrink-0"
           >
-            <TrendingUp size={18} className="sm:w-5 sm:h-5 text-white" strokeWidth={2} />
+            <TrendingUp
+              size={18}
+              className="sm:w-5 sm:h-5 text-white"
+              strokeWidth={2}
+            />
           </motion.div>
           <div className="min-w-0">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-0.5 sm:mb-1 text-sm sm:text-base">
-              Movimiento de inventario
+              {translate("Movimiento de inventario", "Inventory movement")}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
-              Tendencia mensual de entradas y salidas
+              {translate(
+                "Tendencia mensual de entradas y salidas",
+                "Monthly inbound vs outbound trend",
+              )}
             </p>
           </div>
         </motion.div>
@@ -110,10 +141,17 @@ export function GraphsAnalysis() {
           >
             {chartData.length === 0 ? (
               <div className="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">
-                No hay movimientos suficientes para mostrar.
+                {translate(
+                  "No hay movimientos suficientes para mostrar.",
+                  "Not enough movements to display.",
+                )}
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={220} className="sm:!h-[240px]">
+              <ResponsiveContainer
+                width="100%"
+                height={220}
+                className="sm:!h-[240px]"
+              >
                 <BarChart
                   data={chartData.map((point) => ({
                     month: point.month,
@@ -125,25 +163,51 @@ export function GraphsAnalysis() {
                   barGap={8}
                   margin={{ top: 5, right: 5, left: -20, bottom: 5 }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#e5e7eb"
+                    vertical={false}
+                  />
                   <XAxis
                     dataKey="month"
                     axisLine={false}
                     tickLine={false}
-                    tick={{ fontSize: 10, fill: '#6b7280', fontWeight: 500 }}
+                    tick={{ fontSize: 10, fill: "#6b7280", fontWeight: 500 }}
                   />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: '#6b7280' }} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'transparent' }} />
-                  <Bar dataKey="value" radius={[8, 8, 8, 8]} animationBegin={0} animationDuration={800}>
-                    {chartData.map((entry, index) => (
+                  <YAxis
+                    axisLine={false}
+                    tickLine={false}
+                    tick={{ fontSize: 10, fill: "#6b7280" }}
+                  />
+                  <Tooltip
+                    content={<CustomTooltip />}
+                    cursor={{ fill: "transparent" }}
+                  />
+                  <Bar
+                    dataKey="value"
+                    radius={[8, 8, 8, 8]}
+                    animationBegin={0}
+                    animationDuration={800}
+                  >
+                    {chartData.map((_, index) => (
                       <Cell
                         key={`cell-${index}`}
-                        fill={index === chartData.length - 1 ? 'url(#colorGradient)' : '#e0f2fe'}
+                        fill={
+                          index === chartData.length - 1
+                            ? "url(#colorGradient)"
+                            : "#e0f2fe"
+                        }
                       />
                     ))}
                   </Bar>
                   <defs>
-                    <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                    <linearGradient
+                      id="colorGradient"
+                      x1="0"
+                      y1="0"
+                      x2="0"
+                      y2="1"
+                    >
                       <stop offset="0%" stopColor="#3b82f6" />
                       <stop offset="100%" stopColor="#1d4ed8" />
                     </linearGradient>
@@ -159,15 +223,13 @@ export function GraphsAnalysis() {
             transition={{ delay: 1.7 }}
             className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-gray-100 dark:border-slate-700 grid grid-cols-3 gap-2 sm:gap-4 text-center"
           >
-            {[
-              { label: 'Promedio', value: summary.avg },
-              { label: 'Máximo', value: summary.max },
-              { label: 'Tendencia', value: `${summary.trend > 0 ? '+' : ''}${summary.trend}%` },
-            ].map((item) => (
+            {summaryCards.map((item) => (
               <div key={item.label}>
-                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">{item.label}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">
+                  {item.label}
+                </div>
                 <div className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
-                  {Number.isFinite(item.value) ? item.value : '—'}
+                  {Number.isFinite(Number(item.value)) ? item.value : "—"}
                 </div>
               </div>
             ))}

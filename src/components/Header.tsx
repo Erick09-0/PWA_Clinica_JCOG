@@ -18,6 +18,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Button } from './ui/button';
 import { useToast } from '../contexts/ToastContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface HeaderProps {
   onMenuClick?: () => void;
@@ -40,10 +41,12 @@ export function Header({ onMenuClick, onOpenAlerts, onNavigateSection }: HeaderP
   const { alerts, loading, markAlertAsRead, markAllAsRead, refresh } = useAlerts();
   const { user, signOut } = useAuth();
   const { info: toastInfo } = useToast();
+  const { t, language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const unreadAlerts = alerts.filter((alert) => !alert.isRead);
   const previewAlerts = unreadAlerts.slice(0, 4);
-  const currentDate = new Date().toLocaleDateString('es-ES', {
+  const locale = language === 'es' ? 'es-ES' : 'en-US';
+  const currentDate = new Date().toLocaleDateString(locale, {
     weekday: 'long',
     year: 'numeric',
     month: 'long',
@@ -54,7 +57,7 @@ export function Header({ onMenuClick, onOpenAlerts, onNavigateSection }: HeaderP
     user?.user_metadata?.full_name ||
     user?.user_metadata?.name ||
     user?.email ||
-    'Usuario';
+    t('header.defaultUser');
   const userInitials =
     userName
       .split(' ')
@@ -75,12 +78,12 @@ export function Header({ onMenuClick, onOpenAlerts, onNavigateSection }: HeaderP
 
   const handleSearch = () => {
     if (!searchQuery.trim()) {
-      toastInfo?.('Escribe una sección para navegar.');
+      toastInfo?.(t('header.searchEmpty'));
       return;
     }
     const target = resolveSection(searchQuery);
     if (!target) {
-      toastInfo?.('No encontré esa sección. Prueba con inventario, reportes, etc.');
+      toastInfo?.(t('header.searchNotFound'));
       return;
     }
     onNavigateSection?.(target);
@@ -88,11 +91,11 @@ export function Header({ onMenuClick, onOpenAlerts, onNavigateSection }: HeaderP
   };
 
   const handleQuickSearch = () => {
-    const term = window.prompt('¿A qué sección deseas ir? (ej. inventario)');
+    const term = window.prompt(t('header.quickSearchPrompt'));
     if (!term) return;
     const target = resolveSection(term);
     if (!target) {
-      toastInfo?.('No encontré esa sección.');
+      toastInfo?.(t('header.searchNotFound'));
       return;
     }
     onNavigateSection?.(target);
@@ -131,7 +134,7 @@ export function Header({ onMenuClick, onOpenAlerts, onNavigateSection }: HeaderP
             </motion.div>
             <div className="hidden sm:block">
               <div className="font-semibold text-gray-900 dark:text-white transition-colors text-sm lg:text-base">
-                Hola, {userName}
+                {t('header.greeting', { values: { name: userName } })}
               </div>
               <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 capitalize transition-colors hidden md:block">
                 {currentDate}
@@ -152,7 +155,7 @@ export function Header({ onMenuClick, onOpenAlerts, onNavigateSection }: HeaderP
               whileFocus={{ scale: 1.02 }}
               transition={{ type: 'spring', stiffness: 400, damping: 17 }}
               type="text"
-              placeholder="Ir a sección (ej. inventario)"
+                placeholder={t('header.searchPlaceholder')}
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               onKeyDown={(event) => {
@@ -248,14 +251,14 @@ export function Header({ onMenuClick, onOpenAlerts, onNavigateSection }: HeaderP
                     onClick={() => markAllAsRead()}
                     disabled={!unreadAlerts.length}
                   >
-                    Marcar leído
+                    {t('header.markRead')}
                   </Button>
                 </div>
 
                 <div className="max-h-80 overflow-y-auto divide-y divide-gray-100/70 dark:divide-slate-800/70">
                   {loading ? (
                     <div className="p-5 text-center text-sm text-gray-500 dark:text-gray-400">
-                      Cargando alertas...
+                      {t('header.loadingAlerts')}
                     </div>
                   ) : previewAlerts.length > 0 ? (
                     previewAlerts.map((alert) => {
@@ -301,7 +304,7 @@ export function Header({ onMenuClick, onOpenAlerts, onNavigateSection }: HeaderP
                     })
                   ) : (
                     <div className="p-5 text-center text-sm text-gray-500 dark:text-gray-400">
-                      No hay alertas pendientes
+                      {t('header.noAlerts')}
                     </div>
                   )}
                 </div>
@@ -314,14 +317,14 @@ export function Header({ onMenuClick, onOpenAlerts, onNavigateSection }: HeaderP
                     onClick={() => markAllAsRead()}
                     disabled={!unreadAlerts.length}
                   >
-                    Limpiar
+                    {t('header.clear')}
                   </Button>
                   <Button
                     size="sm"
                     className="text-xs bg-gradient-to-r from-blue-600 to-blue-700 text-white"
                     onClick={() => onOpenAlerts?.()}
                   >
-                    Ver Centro de Alertas
+                    {t('header.openAlerts')}
                   </Button>
                 </div>
               </motion.div>

@@ -11,12 +11,14 @@ import {
   Loader2,
 } from 'lucide-react';
 import { format as formatDate } from 'date-fns';
-import { es } from 'date-fns/locale';
+import type { Locale } from 'date-fns';
+import { enUS, es } from 'date-fns/locale';
 import { jsPDF } from 'jspdf';
 import * as XLSX from 'xlsx';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { useToast } from '../../contexts/ToastContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import {
   getInventoryReportData,
   getMovementReportData,
@@ -27,6 +29,8 @@ import {
 import { getCategories } from '../../services/inventoryService';
 
 type ReportFormat = 'PDF' | 'Excel' | 'CSV';
+
+type TranslateFn = (esText: string, enText: string) => string;
 
 interface ReportTableData {
   title: string;
@@ -55,6 +59,7 @@ interface RecentReportEntry {
   reportId?: string;
   filters?: ReportFilters;
   format?: ReportFormat;
+  isSample?: boolean;
 }
 
 const formatBytes = (bytes: number) => {
@@ -165,28 +170,30 @@ const exportToPDF = async (table: ReportTableData, filename: string) => {
   return size;
 };
 
-const reportDefinitions: ReportDefinition[] = [
+const createReportDefinitions = (translate: TranslateFn, locale: Locale): ReportDefinition[] => [
   {
     id: 'inventory',
-    title: 'Reporte de Inventario Completo',
-    description: 'Lista detallada de productos con stock, precios y ubicaciones',
+    title: translate('Reporte de Inventario Completo', 'Complete Inventory Report'),
+    description: translate(
+      'Lista detallada de productos con stock, precios y ubicaciones',
+      'Detailed list of products with stock, pricing, and locations'
+    ),
     icon: Package,
     color: 'from-blue-500 to-blue-600',
     formats: ['PDF', 'Excel', 'CSV'],
-    defaultLastGenerated: 'Nunca',
     generator: async (filters) => {
       const products = await getInventoryReportData(filters);
       return {
-        title: 'Inventario completo',
-        fileName: `inventario_${formatDate(new Date(), 'yyyyMMdd_HHmm')}`,
+        title: translate('Inventario completo', 'Complete inventory'),
+        fileName: `${translate('inventario', 'inventory')}_${formatDate(new Date(), 'yyyyMMdd_HHmm')}`,
         columns: [
-          { key: 'name', label: 'Producto' },
-          { key: 'category', label: 'Categoría' },
-          { key: 'stock', label: 'Stock' },
-          { key: 'minStock', label: 'Stock mínimo' },
-          { key: 'location', label: 'Ubicación' },
-          { key: 'price', label: 'Precio' },
-          { key: 'value', label: 'Valor' },
+          { key: 'name', label: translate('Producto', 'Product') },
+          { key: 'category', label: translate('Categor\u00eda', 'Category') },
+          { key: 'stock', label: translate('Stock', 'Stock') },
+          { key: 'minStock', label: translate('Stock m\u00ednimo', 'Minimum stock') },
+          { key: 'location', label: translate('Ubicaci\u00f3n', 'Location') },
+          { key: 'price', label: translate('Precio', 'Price') },
+          { key: 'value', label: translate('Valor', 'Value') },
         ],
         rows: products.map((product) => ({
           name: product.name,
@@ -202,28 +209,27 @@ const reportDefinitions: ReportDefinition[] = [
   },
   {
     id: 'movements',
-    title: 'Reporte de Movimientos',
-    description: 'Historial de entradas y salidas del inventario',
+    title: translate('Reporte de Movimientos', 'Movements Report'),
+    description: translate('Historial de entradas y salidas del inventario', 'Inventory inflow/outflow history'),
     icon: TrendingUp,
     color: 'from-cyan-500 to-blue-600',
     formats: ['PDF', 'Excel'],
-    defaultLastGenerated: 'Nunca',
     generator: async (filters) => {
       const movements = await getMovementReportData(filters);
       return {
-        title: 'Movimientos de inventario',
-        fileName: `movimientos_${formatDate(new Date(), 'yyyyMMdd_HHmm')}`,
+        title: translate('Movimientos de inventario', 'Inventory movements'),
+        fileName: `${translate('movimientos', 'movements')}_${formatDate(new Date(), 'yyyyMMdd_HHmm')}`,
         columns: [
-          { key: 'created_at', label: 'Fecha' },
-          { key: 'movement_type', label: 'Tipo' },
-          { key: 'product_name', label: 'Producto' },
-          { key: 'category', label: 'Categoría' },
-          { key: 'quantity', label: 'Cantidad' },
-          { key: 'reason', label: 'Motivo' },
+          { key: 'created_at', label: translate('Fecha', 'Date') },
+          { key: 'movement_type', label: translate('Tipo', 'Type') },
+          { key: 'product_name', label: translate('Producto', 'Product') },
+          { key: 'category', label: translate('Categor\u00eda', 'Category') },
+          { key: 'quantity', label: translate('Cantidad', 'Quantity') },
+          { key: 'reason', label: translate('Motivo', 'Reason') },
         ],
         rows: movements.map((movement) => ({
           created_at: formatDate(new Date(movement.created_at), 'dd/MM/yyyy HH:mm', {
-            locale: es,
+            locale,
           }),
           movement_type: movement.movement_type,
           product_name: movement.product_name,
@@ -236,22 +242,24 @@ const reportDefinitions: ReportDefinition[] = [
   },
   {
     id: 'financial',
-    title: 'Reporte Financiero',
-    description: 'Valorización del inventario y costos por categoría',
+    title: translate('Reporte Financiero', 'Financial Report'),
+    description: translate(
+      'Valorizaci\u00f3n del inventario y costos por categor\u00eda',
+      'Inventory valuation and costs by category'
+    ),
     icon: DollarSign,
     color: 'from-indigo-500 to-blue-600',
     formats: ['PDF', 'Excel'],
-    defaultLastGenerated: 'Nunca',
     generator: async (filters) => {
-      const { totalValue, rows } = await getFinancialReportData(filters);
+      const { rows } = await getFinancialReportData(filters);
       return {
-        title: 'Resumen financiero del inventario',
-        fileName: `financiero_${formatDate(new Date(), 'yyyyMMdd_HHmm')}`,
+        title: translate('Resumen financiero del inventario', 'Inventory financial summary'),
+        fileName: `${translate('financiero', 'financial')}_${formatDate(new Date(), 'yyyyMMdd_HHmm')}`,
         columns: [
-          { key: 'category', label: 'Categoría' },
-          { key: 'totalStock', label: 'Stock total' },
-          { key: 'totalValue', label: 'Valor total' },
-          { key: 'contribution', label: '% Contribución' },
+          { key: 'category', label: translate('Categor\u00eda', 'Category') },
+          { key: 'totalStock', label: translate('Stock total', 'Total stock') },
+          { key: 'totalValue', label: translate('Valor total', 'Total value') },
+          { key: 'contribution', label: translate('% Contribuci\u00f3n', '% Contribution') },
         ],
         rows: rows.map((row) => ({
           category: row.category,
@@ -264,23 +272,23 @@ const reportDefinitions: ReportDefinition[] = [
   },
   {
     id: 'critical',
-    title: 'Reporte de Productos Críticos',
-    description: 'Productos con stock bajo o próximos a vencer',
+    title: translate('Reporte de Productos Cr\u00edticos', 'Critical Products Report'),
+    description: translate('Productos con stock bajo o pr\u00f3ximos a vencer', 'Products with low stock or near expiration'),
     icon: Clock,
     color: 'from-amber-500 to-orange-500',
     formats: ['PDF', 'Excel'],
-    defaultLastGenerated: 'Nunca',
     generator: async (filters) => {
       const products = await getCriticalProductsReportData(filters);
+      const noDataLabel = translate('N/D', 'N/A');
       return {
-        title: 'Productos críticos y próximos a vencer',
-        fileName: `criticos_${formatDate(new Date(), 'yyyyMMdd_HHmm')}`,
+        title: translate('Productos cr\u00edticos y pr\u00f3ximos a vencer', 'Critical and near-expiry products'),
+        fileName: `${translate('cr\u00edticos', 'critical')}_${formatDate(new Date(), 'yyyyMMdd_HHmm')}`,
         columns: [
-          { key: 'name', label: 'Producto' },
-          { key: 'category', label: 'Categoría' },
-          { key: 'stock', label: 'Stock' },
-          { key: 'minStock', label: 'Stock mínimo' },
-          { key: 'expiry_date', label: 'Caducidad' },
+          { key: 'name', label: translate('Producto', 'Product') },
+          { key: 'category', label: translate('Categor\u00eda', 'Category') },
+          { key: 'stock', label: translate('Stock', 'Stock') },
+          { key: 'minStock', label: translate('Stock m\u00ednimo', 'Minimum stock') },
+          { key: 'expiry_date', label: translate('Caducidad', 'Expiration') },
         ],
         rows: products.map((product) => ({
           name: product.name,
@@ -289,34 +297,79 @@ const reportDefinitions: ReportDefinition[] = [
           minStock: product.min_stock,
           expiry_date: product.expiry_date
             ? formatDate(new Date(product.expiry_date), 'dd/MM/yyyy')
-            : 'N/D',
+            : noDataLabel,
         })),
       };
     },
   },
 ];
 
-const staticRecentReports: RecentReportEntry[] = [
-  { id: '1', name: 'Inventario_Completo_2024_10.pdf', date: '27 Oct 2024', size: '2.4 MB', type: 'PDF' },
-  { id: '2', name: 'Movimientos_Octubre_2024.xlsx', date: '26 Oct 2024', size: '856 KB', type: 'Excel' },
-  { id: '3', name: 'Reporte_Financiero_Q3.pdf', date: '25 Oct 2024', size: '1.8 MB', type: 'PDF' },
-  { id: '4', name: 'Productos_Criticos_Octubre.pdf', date: '24 Oct 2024', size: '524 KB', type: 'PDF' },
-  { id: '5', name: 'Inventario_Por_Categoria.xlsx', date: '23 Oct 2024', size: '1.2 MB', type: 'Excel' },
-];
+const createStaticRecentReports = (translate: TranslateFn, locale: Locale): RecentReportEntry[] => {
+  const samples = [
+    {
+      id: 'sample-1',
+      name: translate('Inventario_Completo_2024_10.pdf', 'Complete_Inventory_2024_10.pdf'),
+      date: new Date(2024, 9, 27),
+      size: '2.4 MB',
+      type: 'PDF',
+    },
+    {
+      id: 'sample-2',
+      name: translate('Movimientos_Octubre_2024.xlsx', 'Movements_October_2024.xlsx'),
+      date: new Date(2024, 9, 26),
+      size: '856 KB',
+      type: 'Excel',
+    },
+    {
+      id: 'sample-3',
+      name: translate('Reporte_Financiero_Q3.pdf', 'Financial_Report_Q3.pdf'),
+      date: new Date(2024, 9, 25),
+      size: '1.8 MB',
+      type: 'PDF',
+    },
+    {
+      id: 'sample-4',
+      name: translate('Productos_Criticos_Octubre.pdf', 'Critical_Products_October.pdf'),
+      date: new Date(2024, 9, 24),
+      size: '524 KB',
+      type: 'PDF',
+    },
+    {
+      id: 'sample-5',
+      name: translate('Inventario_Por_Categoria.xlsx', 'Inventory_By_Category.xlsx'),
+      date: new Date(2024, 9, 23),
+      size: '1.2 MB',
+      type: 'Excel',
+    },
+  ];
+
+  return samples.map((sample) => ({
+    ...sample,
+    date: formatDate(sample.date, 'dd MMM yyyy', { locale }),
+    isSample: true,
+  }));
+};
 
 export function ReportesSection() {
   const { success, error: showError, warning } = useToast();
+  const { translate, language } = useLanguage();
+  const dateLocale = language === 'en' ? enUS : es;
+  const reportDefinitions = useMemo(
+    () => createReportDefinitions(translate, dateLocale),
+    [translate, dateLocale]
+  );
   const [filters, setFilters] = useState<ReportFilters>({ from: '', to: '', category: 'all' });
   const [categories, setCategories] = useState<string[]>(['all']);
   const [generating, setGenerating] = useState<Record<string, boolean>>({});
-  const [lastGenerated, setLastGenerated] = useState<Record<string, string>>(
-    reportDefinitions.reduce<Record<string, string>>((acc, report) => {
-      acc[report.id] = report.defaultLastGenerated;
+  const [lastGenerated, setLastGenerated] = useState<Record<string, string | null>>(() =>
+    reportDefinitions.reduce<Record<string, string | null>>((acc, report) => {
+      acc[report.id] = null;
       return acc;
     }, {})
   );
-  const [recentReports, setRecentReports] =
-    useState<RecentReportEntry[]>(staticRecentReports);
+  const [recentReports, setRecentReports] = useState<RecentReportEntry[]>(() =>
+    createStaticRecentReports(translate, dateLocale)
+  );
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -329,6 +382,26 @@ export function ReportesSection() {
     };
     loadCategories();
   }, []);
+
+  useEffect(() => {
+    setLastGenerated((prev) => {
+      const updated: Record<string, string | null> = {};
+      reportDefinitions.forEach((report) => {
+        updated[report.id] = prev[report.id] ?? null;
+      });
+      return updated;
+    });
+  }, [reportDefinitions]);
+
+  useEffect(() => {
+    setRecentReports((prev) => {
+      const generated = prev.filter((entry) => !entry.isSample);
+      const limited = generated.slice(0, 5);
+      const samples = createStaticRecentReports(translate, dateLocale);
+      const needed = Math.max(0, 5 - limited.length);
+      return [...limited, ...samples.slice(0, needed)];
+    });
+  }, [translate, dateLocale]);
 
   const activeFilters = useMemo(
     () => ({
@@ -358,34 +431,41 @@ export function ReportesSection() {
       const table = await report.generator(filtersToUse);
 
       if (!table.rows.length) {
-        warning('No se encontraron datos para los filtros seleccionados.');
+        warning(
+          translate(
+            'No se encontraron datos para los filtros seleccionados.',
+            'No data found for the selected filters.'
+          )
+        );
         return;
       }
 
       const fileName = table.fileName || `${report.id}_${format.toLowerCase()}`;
       const size = await exportHandlers[format](table, fileName);
-      const timestamp = formatDate(new Date(), "dd MMM yyyy HH:mm", { locale: es });
-
+      const timestamp = new Date().toISOString();
       setLastGenerated((prev) => ({ ...prev, [report.id]: timestamp }));
 
       if (!skipHistory && size) {
         const newEntry: RecentReportEntry = {
           id: Math.random().toString(36).slice(2, 9),
           name: `${fileName}.${format === 'Excel' ? 'xlsx' : format.toLowerCase()}`,
-          date: formatDate(new Date(), "dd MMM yyyy", { locale: es }),
+          date: formatDate(new Date(), 'dd MMM yyyy', { locale: dateLocale }),
           size: formatBytes(size),
           type: format,
           reportId: report.id,
           filters: { ...filtersToUse },
           format,
+          isSample: false,
         };
         setRecentReports((prev) => [newEntry, ...prev].slice(0, 5));
       }
 
-      success('Reporte generado correctamente.');
+      success(translate('Reporte generado correctamente.', 'Report generated successfully.'));
     } catch (err: any) {
       const message =
-        err instanceof Error ? err.message : 'No se pudo generar el reporte.';
+        err instanceof Error
+          ? err.message
+          : translate('No se pudo generar el reporte.', 'Unable to generate the report.');
       showError(message);
       console.error(err);
     } finally {
@@ -395,12 +475,19 @@ export function ReportesSection() {
 
   const handleRecentDownload = async (entry: RecentReportEntry) => {
     if (!entry.reportId || !entry.format) {
-      warning('Este registro es de ejemplo y no está disponible para descargar.');
+      warning(
+        translate(
+          'Este registro es de ejemplo y no est\u00e1 disponible para descargar.',
+          'This record is a sample and is not available for download.'
+        )
+      );
       return;
     }
     const definition = reportDefinitions.find((item) => item.id === entry.reportId);
     if (!definition) {
-      warning('No se encontró la definición del reporte.');
+      warning(
+        translate('No se encontr\u00f3 la definici\u00f3n del reporte.', 'Report definition was not found.')
+      );
       return;
     }
     await generateAndExport(definition, entry.format, entry.filters, true);
@@ -431,10 +518,10 @@ export function ReportesSection() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h3 className="font-semibold text-lg sm:text-xl mb-2">
-                Generar reporte personalizado
+                {translate('Generar reporte personalizado', 'Generate a custom report')}
               </h3>
               <p className="text-sm sm:text-base text-blue-100">
-                Define el rango de fechas, categoría y formato de exportación.
+                {translate('Define el rango de fechas, categor\u00eda y formato de exportaci\u00f3n.', 'Set the date range, category, and export format.')}
               </p>
             </div>
             <Button
@@ -443,13 +530,13 @@ export function ReportesSection() {
               onClick={() => setFilters({ from: '', to: '', category: 'all' })}
             >
               <Filter size={16} />
-              Limpiar filtros
+              {translate('Limpiar filtros', 'Clear filters')}
             </Button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <label className="text-xs font-medium text-blue-100 flex flex-col gap-1">
-              Desde
+              {translate('Desde', 'From')}
               <Input
                 type="date"
                 value={filters.from || ''}
@@ -458,7 +545,7 @@ export function ReportesSection() {
               />
             </label>
             <label className="text-xs font-medium text-blue-100 flex flex-col gap-1">
-              Hasta
+              {translate('Hasta', 'To')}
               <Input
                 type="date"
                 value={filters.to || ''}
@@ -467,7 +554,7 @@ export function ReportesSection() {
               />
             </label>
             <label className="text-xs font-medium text-blue-100 flex flex-col gap-1">
-              Categoría
+              {translate('Categor\u00eda', 'Category')}
               <select
                 value={filters.category || 'all'}
                 onChange={(event) =>
@@ -477,7 +564,7 @@ export function ReportesSection() {
               >
                 {categories.map((category) => (
                   <option value={category} key={category}>
-                    {category === 'all' ? 'Todas' : category}
+                    {category === 'all' ? translate('Todas', 'All') : category}
                   </option>
                 ))}
               </select>
@@ -489,6 +576,10 @@ export function ReportesSection() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         {reportDefinitions.map((report, index) => {
           const Icon = report.icon;
+          const lastGeneratedValue = lastGenerated[report.id];
+          const lastGeneratedLabel = lastGeneratedValue
+            ? formatDate(new Date(lastGeneratedValue), 'dd MMM yyyy HH:mm', { locale: dateLocale })
+            : translate('Nunca', 'Never');
           return (
             <motion.div
               key={report.id}
@@ -514,7 +605,7 @@ export function ReportesSection() {
 
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-4 border-t border-gray-100 dark:border-slate-700">
                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                  Último generado: {lastGenerated[report.id]}
+                  {translate('Último generado', 'Last generated')}: {lastGeneratedLabel}
                 </div>
                 <div className="flex items-center gap-2 flex-wrap">
                   {report.formats.map((format) => {
@@ -553,10 +644,13 @@ export function ReportesSection() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 mb-5 sm:mb-6">
           <div>
             <h3 className="font-semibold text-gray-900 dark:text-white mb-1 transition-colors text-sm sm:text-base">
-              Reportes recientes
+              {translate('Reportes recientes', 'Recent reports')}
             </h3>
             <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-              Últimos reportes generados y descargados
+              {translate(
+                'Últimos reportes generados y descargados',
+                'Latest generated and downloaded reports'
+              )}
             </p>
           </div>
         </div>
@@ -579,7 +673,7 @@ export function ReportesSection() {
                     {report.name}
                   </div>
                   <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 transition-colors truncate">
-                    {report.date} • {report.size}
+                    {report.date} ? {report.size}
                   </div>
                 </div>
               </div>

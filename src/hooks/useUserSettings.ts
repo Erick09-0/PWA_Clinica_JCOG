@@ -6,6 +6,7 @@ import {
   saveUserSettings,
 } from '../services/userSettingsService';
 import type { UserSettings } from '../types/database.types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface UseUserSettingsReturn {
   settings: UserSettings;
@@ -28,6 +29,7 @@ export const useUserSettings = (userId?: string | null): UseUserSettingsReturn =
   const [saving, setSaving] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const { translate } = useLanguage();
 
   const refresh = useCallback(async () => {
     if (!userId) return;
@@ -38,7 +40,9 @@ export const useUserSettings = (userId?: string | null): UseUserSettingsReturn =
       setSettings(data);
     } catch (err: any) {
       const message =
-        err instanceof Error ? err.message : 'Error obteniendo configuraciones';
+        err instanceof Error
+          ? err.message
+          : translate('Error obteniendo configuraciones', 'Error fetching settings');
       setError(message);
     } finally {
       setLoading(false);
@@ -64,10 +68,12 @@ export const useUserSettings = (userId?: string | null): UseUserSettingsReturn =
       setSuccess(null);
       const saved = await saveUserSettings(userId, settings);
       setSettings(saved);
-      setSuccess('Configuración actualizada correctamente');
+      setSuccess(translate('Configuración actualizada correctamente', 'Settings updated successfully'));
     } catch (err: any) {
       const message =
-        err instanceof Error ? err.message : 'Error guardando configuraciones';
+        err instanceof Error
+          ? err.message
+          : translate('Error guardando configuraciones', 'Error saving settings');
       setError(message);
     } finally {
       setSaving(false);

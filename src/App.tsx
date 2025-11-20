@@ -22,6 +22,8 @@ import ConfigAlertas from './components/sections/ConfigAlertas';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { LoginScreen } from './components/LoginScreen';
 import { Loader2 } from 'lucide-react';
+import { LanguageProvider } from './contexts/LanguageContext';
+import { useLanguage } from './contexts/LanguageContext';
 
 function AppContent() {
   const { info } = useToast();
@@ -29,6 +31,7 @@ function AppContent() {
   const [showSplash, setShowSplash] = useState(true);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, loading: authLoading, signOut } = useAuth();
+  const { t } = useLanguage();
 
   useEffect(() => {
     // Check if splash has been shown before in this session
@@ -85,7 +88,7 @@ function AppContent() {
         return <ConfigAlertas onBack={() => setActiveSection('alertas')} />;
       case 'logout':
         signOut();
-        info('Cerrando sesión...');
+        info(t('app.loggingOut'));
         return null;
       default:
         return null;
@@ -96,7 +99,7 @@ function AppContent() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
         <Loader2 className="w-6 h-6 animate-spin mr-2" />
-        Verificando sesión...
+        {t('app.verifyingSession')}
       </div>
     );
   }
@@ -158,7 +161,9 @@ export default function App() {
     <ThemeProvider>
       <ToastProvider>
         <AuthProvider>
-          <AppContent />
+          <LanguageProvider>
+            <AppContent />
+          </LanguageProvider>
         </AuthProvider>
       </ToastProvider>
     </ThemeProvider>

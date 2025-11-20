@@ -18,8 +18,15 @@ import { Button } from '../ui/button';
 import { Switch } from '../ui/switch';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUserSettings } from '../../hooks/useUserSettings';
+import { useLanguage } from '../../contexts/LanguageContext';
+import type { LanguageCode } from '../../i18n/translations';
 
-const roleOptions = ['Administrador', 'Farmacéutico', 'Almacén', 'Auditor'];
+const roleOptions = [
+  { value: 'Administrador', es: 'Administrador', en: 'Administrator' },
+  { value: 'Farmacéutico', es: 'Farmacéutico', en: 'Pharmacist' },
+  { value: 'Almacén', es: 'Almacén', en: 'Warehouse' },
+  { value: 'Auditor', es: 'Auditor', en: 'Auditor' },
+];
 const currencyOptions = ['MXN', 'USD', 'EUR'];
 const timezoneOptions = [
   'America/Mexico_City',
@@ -43,9 +50,14 @@ export function ConfiguracionSection() {
     refresh,
   } = useUserSettings(user?.id);
   const [passwordMessage, setPasswordMessage] = useState<string | null>(null);
+  const { language, changeLanguage, translate } = useLanguage();
 
   const handleSave = async () => {
+    const targetLanguage = (settings.language as LanguageCode) ?? 'es';
     await persist();
+    if (targetLanguage !== language) {
+      await changeLanguage(targetLanguage);
+    }
   };
 
   const handlePasswordReset = async () => {
@@ -53,10 +65,20 @@ export function ConfiguracionSection() {
     try {
       setPasswordMessage(null);
       await resetPassword(user.email);
-      setPasswordMessage('Te enviamos un enlace para restablecer tu contraseña.');
+      setPasswordMessage(
+        translate(
+          'Te enviamos un enlace para restablecer tu contraseña.',
+          'We sent you a link to reset your password.'
+        )
+      );
     } catch (err: any) {
       const message =
-        err instanceof Error ? err.message : 'No se pudo enviar el enlace de seguridad.';
+        err instanceof Error
+          ? err.message
+          : translate(
+              'No se pudo enviar el enlace de seguridad.',
+              'We could not send the security email.'
+            );
       setPasswordMessage(message);
     }
   };
@@ -71,10 +93,13 @@ export function ConfiguracionSection() {
       >
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2 transition-colors">
-            Configuración
+            {translate('Configuración', 'Settings')}
           </h1>
           <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 transition-colors">
-            Personaliza tu experiencia y ajusta las preferencias del sistema
+            {translate(
+              'Personaliza tu experiencia y ajusta las preferencias del sistema',
+              'Personalise your experience and adjust system preferences'
+            )}
           </p>
         </div>
         <Button
@@ -84,7 +109,7 @@ export function ConfiguracionSection() {
           disabled={loading}
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
-          Recargar datos
+          {translate('Recargar datos', 'Reload data')}
         </Button>
       </motion.div>
 
@@ -110,35 +135,46 @@ export function ConfiguracionSection() {
             <Users className="w-5 h-5" />
           </span>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">Perfil de Usuario</h3>
+            <h3 className="font-semibold text-gray-900 dark:text-white">
+              {translate('Perfil de Usuario', 'User Profile')}
+            </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              Tu información personal sincronizada con Supabase Auth
+              {translate(
+                'Tu información personal sincronizada con Supabase Auth',
+                'Your personal information synced from Supabase Auth'
+              )}
             </p>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Nombre completo</label>
+            <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              {translate('Nombre completo', 'Full name')}
+            </label>
             <div className="relative">
               <User className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
                 value={settings.fullName}
                 onChange={(event) => update({ fullName: event.target.value })}
                 className="pl-9"
-                placeholder="Nombre y apellidos"
+                placeholder={translate('Nombre y apellidos', 'First and last name')}
                 disabled={loading}
               />
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Correo</label>
+            <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              {translate('Correo', 'Email')}
+            </label>
             <div className="relative">
               <Mail className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input value={user?.email ?? ''} disabled className="pl-9 bg-gray-50 dark:bg-slate-900" />
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Teléfono</label>
+            <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              {translate('Teléfono', 'Phone')}
+            </label>
             <div className="relative">
               <Phone className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 w-4 h-4" />
               <Input
@@ -151,7 +187,9 @@ export function ConfiguracionSection() {
             </div>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Rol</label>
+            <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              {translate('Rol', 'Role')}
+            </label>
             <select
               value={settings.role}
               onChange={(event) => update({ role: event.target.value })}
@@ -159,8 +197,8 @@ export function ConfiguracionSection() {
               disabled={loading}
             >
               {roleOptions.map((role) => (
-                <option key={role} value={role}>
-                  {role}
+                <option key={role.value} value={role.value}>
+                  {translate(role.es, role.en)}
                 </option>
               ))}
             </select>
@@ -179,33 +217,49 @@ export function ConfiguracionSection() {
             <Bell className="w-5 h-5" />
           </span>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">Notificaciones</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Controla qué alertas recibes</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white">
+              {translate('Notificaciones', 'Notifications')}
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {translate('Controla qué alertas recibes', 'Control which alerts you receive')}
+            </p>
           </div>
         </div>
         <div className="grid gap-3">
           {[
             {
-              label: 'Alertas de stock crítico',
-              description: 'Recibe avisos cuando un producto baja del mínimo.',
+              label: translate('Alertas de stock crítico', 'Critical stock alerts'),
+              description: translate(
+                'Recibe avisos cuando un producto baja del mínimo.',
+                'Get notified when products drop below the threshold.'
+              ),
               field: 'notifyStockCritical',
               value: settings.notifyStockCritical,
             },
             {
-              label: 'Productos próximos a vencer',
-              description: 'Mantente al tanto del vencimiento de productos sensibles.',
+              label: translate('Productos próximos a vencer', 'Expiring products'),
+              description: translate(
+                'Mantente al tanto del vencimiento de productos sensibles.',
+                'Stay ahead of sensitive product expirations.'
+              ),
               field: 'notifyExpiring',
               value: settings.notifyExpiring,
             },
             {
-              label: 'Pedidos pendientes',
-              description: 'Recibe seguimiento cuando hay pedidos activos.',
+              label: translate('Pedidos pendientes', 'Pending orders'),
+              description: translate(
+                'Recibe seguimiento cuando hay pedidos activos.',
+                'Receive follow-ups whenever there are active orders.'
+              ),
               field: 'notifyPendingOrders',
               value: settings.notifyPendingOrders,
             },
             {
-              label: 'Reportes diarios',
-              description: 'Resumen diario del inventario enviado al correo.',
+              label: translate('Reportes diarios', 'Daily reports'),
+              description: translate(
+                'Resumen diario del inventario enviado al correo.',
+                'Daily inventory summary delivered via email.'
+              ),
               field: 'notifyDailyReports',
               value: settings.notifyDailyReports,
             },
@@ -241,34 +295,40 @@ export function ConfiguracionSection() {
             <Shield className="w-5 h-5" />
           </span>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">Seguridad</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Protege tu cuenta y sesiones</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white">
+              {translate('Seguridad', 'Security')}
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {translate('Protege tu cuenta y sesiones', 'Protect your account and sessions')}
+            </p>
           </div>
         </div>
         <div className="space-y-3">
           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-2xl">
             <div>
               <p className="text-sm font-medium text-gray-900 dark:text-white">
-                Autenticación de dos factores
+                {translate('Autenticación de dos factores', 'Two-factor authentication')}
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Próximamente disponible para cuentas reforzadas.
+                {translate('Próximamente disponible para cuentas reforzadas.', 'Coming soon for hardened accounts.')}
               </p>
             </div>
             <Switch disabled />
           </div>
           <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-slate-900 rounded-2xl">
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">Cambiar contraseña</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">
+                {translate('Cambiar contraseña', 'Change password')}
+              </p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Enviamos un enlace de seguridad a tu correo registrado.
+                {translate('Enviamos un enlace de seguridad a tu correo registrado.', 'We send a secure link to your registered email.')}
               </p>
               {passwordMessage && (
                 <p className="text-xs text-blue-500 dark:text-blue-300 mt-1">{passwordMessage}</p>
               )}
             </div>
             <Button variant="outline" size="sm" onClick={handlePasswordReset} disabled={loading}>
-              Enviar enlace
+              {translate('Enviar enlace', 'Send link')}
             </Button>
           </div>
         </div>
@@ -285,13 +345,19 @@ export function ConfiguracionSection() {
             <Database className="w-5 h-5" />
           </span>
           <div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">Preferencias del sistema</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Configura formatos y localización</p>
+            <h3 className="font-semibold text-gray-900 dark:text-white">
+              {translate('Preferencias del sistema', 'System preferences')}
+            </h3>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              {translate('Configura formatos y localización', 'Configure formats and localisation')}
+            </p>
           </div>
         </div>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Moneda</label>
+            <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              {translate('Moneda', 'Currency')}
+            </label>
             <select
               value={settings.currency}
               onChange={(event) => update({ currency: event.target.value })}
@@ -306,7 +372,9 @@ export function ConfiguracionSection() {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Zona horaria</label>
+            <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              {translate('Zona horaria', 'Time zone')}
+            </label>
             <select
               value={settings.timezone}
               onChange={(event) => update({ timezone: event.target.value })}
@@ -321,7 +389,9 @@ export function ConfiguracionSection() {
             </select>
           </div>
           <div>
-            <label className="text-sm font-medium text-gray-600 dark:text-gray-300">Formato de fecha</label>
+            <label className="text-sm font-medium text-gray-600 dark:text-gray-300">
+              {translate('Formato de fecha', 'Date format')}
+            </label>
             <select
               value={settings.dateFormat}
               onChange={(event) => update({ dateFormat: event.target.value })}
@@ -338,7 +408,7 @@ export function ConfiguracionSection() {
           <div>
             <label className="text-sm font-medium text-gray-600 dark:text-gray-300 flex items-center gap-1">
               <Globe className="w-4 h-4" />
-              Idioma
+              {translate('Idioma', 'Language')}
             </label>
             <select
               value={settings.language}
@@ -348,7 +418,9 @@ export function ConfiguracionSection() {
             >
               {languageOptions.map((lang) => (
                 <option key={lang} value={lang}>
-                  {lang === 'es' ? 'Español' : 'Inglés'}
+                  {lang === 'es'
+                    ? translate('Español', 'Spanish')
+                    : translate('Inglés', 'English')}
                 </option>
               ))}
             </select>
@@ -364,7 +436,7 @@ export function ConfiguracionSection() {
       >
         <Button variant="outline" className="gap-2" onClick={() => refresh()} disabled={loading}>
           <RefreshCcw className="w-4 h-4" />
-          Cancelar
+          {translate('Cancelar', 'Cancel')}
         </Button>
         <Button
           className="bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-lg hover:shadow-xl gap-2"
@@ -372,7 +444,7 @@ export function ConfiguracionSection() {
           disabled={saving || loading}
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Settings className="w-4 h-4" />}
-          Guardar Cambios
+          {translate('Guardar Cambios', 'Save changes')}
         </Button>
       </motion.div>
     </div>

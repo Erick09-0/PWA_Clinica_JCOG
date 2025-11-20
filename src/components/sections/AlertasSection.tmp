@@ -1,15 +1,8 @@
-import { motion } from "motion/react";
-import {
-  Bell,
-  AlertTriangle,
-  Clock,
-  Package,
-  Loader2,
-  RefreshCcw,
-} from "lucide-react";
-import { Button } from "../ui/button";
-import { useAlerts } from "../../hooks/useAlerts";
-import { useLanguage } from "../../contexts/LanguageContext";
+import { motion } from 'motion/react';
+import { Bell, AlertTriangle, Clock, Package, Loader2, RefreshCcw } from 'lucide-react';
+import { Button } from '../ui/button';
+// Importar hook personalizado para obtener alertas dinámicas
+import { useAlerts } from '../../hooks/useAlerts';
 
 interface AlertasSectionProps {
   onOpenConfigAlertas?: () => void;
@@ -18,59 +11,48 @@ interface AlertasSectionProps {
 // Configuración de estilos en función del tipo de alerta
 const typeConfig = {
   critical: {
-    gradient: "from-red-500 to-rose-600",
-    bg: "bg-red-50",
-    border: "border-red-200",
-    text: "text-red-700",
-    icon: "text-red-600",
+    gradient: 'from-red-500 to-rose-600',
+    bg: 'bg-red-50',
+    border: 'border-red-200',
+    text: 'text-red-700',
+    icon: 'text-red-600',
   },
   warning: {
-    gradient: "from-amber-500 to-orange-500",
-    bg: "bg-amber-50",
-    border: "border-amber-200",
-    text: "text-amber-700",
-    icon: "text-amber-600",
+    gradient: 'from-amber-500 to-orange-500',
+    bg: 'bg-amber-50',
+    border: 'border-amber-200',
+    text: 'text-amber-700',
+    icon: 'text-amber-600',
   },
   info: {
-    gradient: "from-blue-500 to-blue-600",
-    bg: "bg-blue-50",
-    border: "border-blue-200",
-    text: "text-blue-700",
-    icon: "text-blue-600",
+    gradient: 'from-blue-500 to-blue-600',
+    bg: 'bg-blue-50',
+    border: 'border-blue-200',
+    text: 'text-blue-700',
+    icon: 'text-blue-600',
   },
 };
 
 export function AlertasSection({ onOpenConfigAlertas }: AlertasSectionProps) {
-  const { alerts, loading, error, markAllAsRead, markAlertAsRead, refresh } =
-    useAlerts();
-  const { translate } = useLanguage();
+  // Obtener alertas y estado con el hook
+  const { alerts, loading, error, markAllAsRead, markAlertAsRead, refresh } = useAlerts();
 
   // Contadores solo de alertas no leídas
-  const criticalCount = alerts.filter(
-    (a) => a.type === "critical" && !a.isRead,
-  ).length;
-  const warningCount = alerts.filter(
-    (a) => a.type === "warning" && !a.isRead,
-  ).length;
-  const infoCount = alerts.filter((a) => a.type === "info" && !a.isRead).length;
+  const criticalCount = alerts.filter((a) => a.type === 'critical' && !a.isRead).length;
+  const warningCount = alerts.filter((a) => a.type === 'warning' && !a.isRead).length;
+  const infoCount = alerts.filter((a) => a.type === 'info' && !a.isRead).length;
 
   return (
     <div className="space-y-4 sm:space-y-6">
-      <motion.div
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
+      {/* Encabezado */}
+      <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.5 }}>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white mb-2 transition-colors">
-              {translate("Centro de Alertas", "Alerts Center")}
+              Centro de Alertas
             </h1>
             <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 transition-colors">
-              {translate(
-                "Notificaciones importantes que requieren tu atención",
-                "Important notifications that need your attention",
-              )}
+              Notificaciones importantes que requieren tu atención
             </p>
           </div>
           <Button
@@ -80,61 +62,32 @@ export function AlertasSection({ onOpenConfigAlertas }: AlertasSectionProps) {
             onClick={() => refresh()}
             disabled={loading}
           >
-            {loading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <RefreshCcw className="w-4 h-4" />
-            )}
-            {translate("Actualizar datos", "Refresh data")}
+            {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCcw className="w-4 h-4" />}
+            Actualizar datos
           </Button>
         </div>
       </motion.div>
 
+      {/* Tarjetas de resumen */}
       <div className="grid grid-cols-3 gap-3 sm:gap-5">
         {[
-          {
-            label: translate("Alertas críticas", "Critical alerts"),
-            value: criticalCount,
-            icon: AlertTriangle,
-            color: "from-red-500 to-rose-600",
-          },
-          {
-            label: translate("Alertas advertencia", "Warning alerts"),
-            value: warningCount,
-            icon: Clock,
-            color: "from-amber-500 to-orange-500",
-          },
-          {
-            label: translate("Notificaciones", "Notifications"),
-            value: infoCount,
-            icon: Bell,
-            color: "from-blue-500 to-blue-600",
-          },
+          { label: 'Alertas Críticas', value: criticalCount, icon: AlertTriangle, color: 'from-red-500 to-rose-600' },
+          { label: 'Alertas Advertencia', value: warningCount, icon: Clock, color: 'from-amber-500 to-orange-500' },
+          { label: 'Notificaciones', value: infoCount, icon: Bell, color: 'from-blue-500 to-blue-600' },
         ].map((stat, index) => (
           <motion.div
             key={index}
             initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.1 + index * 0.1 }}
-            whileHover={{
-              y: -4,
-              boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)",
-            }}
+            whileHover={{ y: -4, boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.1)' }}
             className="bg-white/60 dark:bg-slate-800/70 backdrop-blur-2xl backdrop-saturate-150 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-[0_8px_32px_rgba(31,41,55,0.08),0_1px_2px_rgba(0,0,0,0.05)] border border-white/40 dark:border-slate-700/30 transition-colors"
           >
             <div className="flex flex-col sm:flex-row items-center justify-between gap-2 sm:gap-0 mb-3 sm:mb-4">
-              <div
-                className={`p-2.5 sm:p-3 bg-gradient-to-br ${stat.color} rounded-xl sm:rounded-2xl shadow-lg`}
-              >
-                <stat.icon
-                  size={20}
-                  className="sm:w-6 sm:h-6 text-white"
-                  strokeWidth={2}
-                />
+              <div className={`p-2.5 sm:p-3 bg-gradient-to-br ${stat.color} rounded-xl sm:rounded-2xl shadow-lg`}>
+                <stat.icon size={20} className="sm:w-6 sm:h-6 text-white" strokeWidth={2} />
               </div>
-              <div
-                className={`text-3xl sm:text-4xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}
-              >
+              <div className={`text-3xl sm:text-4xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent`}>
                 {stat.value}
               </div>
             </div>
@@ -145,67 +98,49 @@ export function AlertasSection({ onOpenConfigAlertas }: AlertasSectionProps) {
         ))}
       </div>
 
+      {/* Lista de alertas */}
       <div className="space-y-3 sm:space-y-4">
+        {/* Estados de carga y error */}
         {loading && (
           <div className="flex justify-center items-center py-10">
-            <span className="text-gray-600 dark:text-gray-400">
-              {translate("Cargando alertas...", "Loading alerts...")}
-            </span>
+            <span className="text-gray-600 dark:text-gray-400">Cargando alertas...</span>
           </div>
         )}
         {error && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
-            <p className="text-red-700 dark:text-red-400">
-              {translate("Error:", "Error:")} {error}
-            </p>
+            <p className="text-red-700 dark:text-red-400">Error: {error}</p>
           </div>
         )}
         {!loading && !error && alerts.length === 0 && (
           <div className="text-center py-8">
-            <p className="text-gray-500 dark:text-gray-400">
-              {translate(
-                "No hay alertas en este momento",
-                "No alerts at this time",
-              )}
-            </p>
+            <p className="text-gray-500 dark:text-gray-400">No hay alertas en este momento</p>
           </div>
         )}
-        {!loading &&
-          !error &&
+        {/* Mostrar solo alertas no leídas */}
+        {!loading && !error &&
           alerts
             .filter((alert) => !alert.isRead)
             .map((alert, index) => {
               const config = typeConfig[alert.type as keyof typeof typeConfig];
-              const Icon =
-                alert.type === "critical"
-                  ? AlertTriangle
-                  : alert.type === "warning"
-                    ? Clock
-                    : Bell;
+              // Seleccionar icono según el tipo
+              const Icon = alert.type === 'critical' ? AlertTriangle : alert.type === 'warning' ? Clock : Bell;
               return (
                 <motion.div
                   key={alert.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: 0.3 + index * 0.1 }}
-                  whileHover={{
-                    x: 4,
-                    boxShadow: "0 10px 15px -3px rgb(0 0 0 / 0.1)",
-                  }}
+                  whileHover={{ x: 4, boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
                   className={`bg-white/60 dark:bg-slate-800/70 backdrop-blur-2xl backdrop-saturate-150 rounded-2xl sm:rounded-3xl p-4 sm:p-6 shadow-[0_8px_32px_rgba(31,41,55,0.08),0_1px_2px_rgba(0,0,0,0.05)] border ${config.border}/30 dark:border-slate-700/30 transition-all`}
                 >
                   <div className="flex items-start gap-3 sm:gap-4">
                     <motion.div
                       initial={{ scale: 0, rotate: -180 }}
                       animate={{ scale: 1, rotate: 0 }}
-                      transition={{ delay: 0.4 + index * 0.1, type: "spring" }}
+                      transition={{ delay: 0.4 + index * 0.1, type: 'spring' }}
                       className={`w-10 h-10 sm:w-12 sm:h-12 ${config.bg} dark:bg-opacity-20 rounded-xl sm:rounded-2xl flex items-center justify-center flex-shrink-0`}
                     >
-                      <Icon
-                        size={20}
-                        className={`sm:w-6 sm:h-6 ${config.icon}`}
-                        strokeWidth={2.5}
-                      />
+                      <Icon size={20} className={`sm:w-6 sm:h-6 ${config.icon}`} strokeWidth={2.5} />
                     </motion.div>
 
                     <div className="flex-1 min-w-0">
@@ -225,25 +160,18 @@ export function AlertasSection({ onOpenConfigAlertas }: AlertasSectionProps) {
 
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3 sm:mt-4">
                         <div className="flex items-center gap-2">
-                          <Package
-                            size={14}
-                            className="sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 transition-colors flex-shrink-0"
-                          />
+                          <Package size={14} className="sm:w-4 sm:h-4 text-gray-400 dark:text-gray-500 transition-colors flex-shrink-0" />
                           <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 transition-colors truncate">
                             {alert.product}
                           </span>
                         </div>
-                        <motion.div
-                          whileHover={{ scale: 1.05 }}
-                          whileTap={{ scale: 0.95 }}
-                          className="w-full sm:w-auto"
-                        >
+                        <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="w-full sm:w-auto">
                           <Button
                             size="sm"
                             className={`w-full sm:w-auto bg-gradient-to-r ${config.gradient} text-white shadow-md hover:shadow-lg text-xs sm:text-sm`}
                             onClick={() => markAlertAsRead(alert.id)}
                           >
-                            {translate(alert.action, alert.action)}
+                            {alert.action}
                           </Button>
                         </motion.div>
                       </div>
@@ -254,6 +182,7 @@ export function AlertasSection({ onOpenConfigAlertas }: AlertasSectionProps) {
             })}
       </div>
 
+      {/* Botones inferiores */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -264,18 +193,20 @@ export function AlertasSection({ onOpenConfigAlertas }: AlertasSectionProps) {
           variant="outline"
           className="gap-2 text-sm"
           onClick={() => {
+            // Marcar todas las alertas como leídas
             markAllAsRead();
           }}
         >
-          {translate("Marcar todas como leídas", "Mark all as read")}
+          Marcar todas como leídas
         </Button>
         <Button
           className="bg-gradient-to-r from-blue-600 to-blue-700 text-white gap-2 text-sm"
           onClick={() => onOpenConfigAlertas?.()}
         >
-          {translate("Configurar alertas", "Configure alerts")}
+          Configurar Alertas
         </Button>
       </motion.div>
     </div>
   );
 }
+

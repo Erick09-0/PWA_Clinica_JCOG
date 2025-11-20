@@ -1,15 +1,25 @@
-import { useMemo } from 'react';
-import { motion } from 'motion/react';
-import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
-import { TrendingUp, RefreshCw } from 'lucide-react';
-import { useAnalytics } from '../hooks/useAnalytics';
+import { useMemo } from "react";
+import { motion } from "motion/react";
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+  Legend,
+  Tooltip,
+} from "recharts";
+import { TrendingUp, RefreshCw } from "lucide-react";
+import { useAnalytics } from "../hooks/useAnalytics";
+import { useLanguage } from "../contexts/LanguageContext";
 
 export function CategoryDistribution() {
   const { data, loading, error, refresh } = useAnalytics();
+  const { translate, formatNumber } = useLanguage();
+
   const distribution = data?.categoryDistribution ?? [];
   const totalProducts = data?.totals.totalProducts ?? 0;
   const categoryCount = distribution.length;
-  const topCategory = distribution[0]?.name ?? 'N/D';
+  const topCategory = distribution[0]?.name ?? translate("N/D", "N/A");
 
   const colors = useMemo(
     () =>
@@ -17,24 +27,29 @@ export function CategoryDistribution() {
         ...entry,
         color: entry.color || `hsl(${(index * 50) % 360}, 70%, 50%)`,
       })),
-    [distribution]
+    [distribution],
   );
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const item = payload[0];
       const total = distribution.reduce((sum, entry) => sum + entry.value, 0);
-      const percentage = total > 0 ? ((item.value / total) * 100).toFixed(1) : '0';
+      const percentage =
+        total > 0 ? ((item.value / total) * 100).toFixed(1) : "0";
       return (
         <motion.div
           initial={{ scale: 0, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+          transition={{ type: "spring", stiffness: 500, damping: 30 }}
           className="bg-gradient-to-r from-gray-900 to-blue-900 text-white px-3 sm:px-4 py-2 sm:py-3 rounded-xl text-xs space-y-1 shadow-xl border border-blue-400"
         >
           <div className="font-semibold text-blue-300">{item.name}</div>
-          <div className="font-medium">{item.value} productos</div>
-          <div className="text-blue-200 text-xs">{percentage}% del total</div>
+          <div className="font-medium">
+            {formatNumber(item.value)} {translate("productos", "products")}
+          </div>
+          <div className="text-blue-200 text-xs">
+            {percentage}% {translate("del total", "of total")}
+          </div>
         </motion.div>
       );
     }
@@ -80,17 +95,32 @@ export function CategoryDistribution() {
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.95, type: 'spring', stiffness: 200, damping: 15 }}
+            transition={{
+              delay: 0.95,
+              type: "spring",
+              stiffness: 200,
+              damping: 15,
+            }}
             className="p-2 sm:p-3 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl sm:rounded-2xl shadow-lg flex-shrink-0"
           >
-            <TrendingUp size={18} className="sm:w-5 sm:h-5 text-white" strokeWidth={2} />
+            <TrendingUp
+              size={18}
+              className="sm:w-5 sm:h-5 text-white"
+              strokeWidth={2}
+            />
           </motion.div>
           <div className="min-w-0">
             <h3 className="font-semibold text-gray-900 dark:text-white mb-0.5 sm:mb-1 text-sm sm:text-base truncate">
-              Distribución por categorías
+              {translate(
+                "Distribución por categorías",
+                "Category distribution",
+              )}
             </h3>
             <p className="text-xs text-gray-500 dark:text-gray-400 hidden sm:block">
-              Inventario organizado por tipo de producto
+              {translate(
+                "Inventario organizado por tipo de producto",
+                "Inventory organised by product type",
+              )}
             </p>
           </div>
         </motion.div>
@@ -102,7 +132,10 @@ export function CategoryDistribution() {
           disabled={loading}
         >
           {loading ? (
-            <RefreshCw size={16} className="animate-spin text-blue-600 dark:text-blue-400" />
+            <RefreshCw
+              size={16}
+              className="animate-spin text-blue-600 dark:text-blue-400"
+            />
           ) : (
             <RefreshCw size={16} className="text-blue-600 dark:text-blue-400" />
           )}
@@ -123,7 +156,10 @@ export function CategoryDistribution() {
           >
             {distribution.length === 0 ? (
               <div className="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">
-                Aún no hay datos para mostrar.
+                {translate(
+                  "Aún no hay datos para mostrar.",
+                  "No data to display yet.",
+                )}
               </div>
             ) : (
               <ResponsiveContainer width="100%" height={300}>
@@ -144,7 +180,11 @@ export function CategoryDistribution() {
                     ))}
                   </Pie>
                   <Tooltip content={<CustomTooltip />} />
-                  <Legend content={<CustomLegend />} verticalAlign="bottom" height={80} />
+                  <Legend
+                    content={<CustomLegend />}
+                    verticalAlign="bottom"
+                    height={80}
+                  />
                 </PieChart>
               </ResponsiveContainer>
             )}
@@ -157,19 +197,25 @@ export function CategoryDistribution() {
             className="mt-4 sm:mt-6 pt-4 sm:pt-5 border-t border-gray-100 dark:border-slate-700 grid grid-cols-3 gap-2 sm:gap-4"
           >
             <div className="text-center">
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">Total productos</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">
+                {translate("Total productos", "Total products")}
+              </div>
               <div className="text-base sm:text-lg font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                {totalProducts || '—'}
+                {totalProducts ? formatNumber(totalProducts) : "—"}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">Categorías</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">
+                {translate("Categorías", "Categories")}
+              </div>
               <div className="text-base sm:text-lg font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                {categoryCount}
+                {formatNumber(categoryCount)}
               </div>
             </div>
             <div className="text-center">
-              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">Mayor stock</div>
+              <div className="text-xs text-gray-500 dark:text-gray-400 mb-1 font-medium">
+                {translate("Mayor stock", "Largest stock")}
+              </div>
               <div className="text-base sm:text-lg font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                 {topCategory}
               </div>
