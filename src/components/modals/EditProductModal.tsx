@@ -16,6 +16,7 @@ import { useInventory } from "../../hooks/useInventory";
 import { useToast } from "../../contexts/ToastContext";
 import type { Product, ProductUpdate } from "../../types/database.types";
 import { useLanguage } from "../../contexts/LanguageContext";
+import { Button } from "../ui/button";
 
 interface EditProductModalProps {
   isOpen: boolean;
